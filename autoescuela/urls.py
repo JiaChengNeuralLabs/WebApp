@@ -20,6 +20,6 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', lambda request: redirect('student_list')),
+    path('', lambda request: redirect('login')),  # Redirigir raíz al login
     path('students/', include('students.urls')),
 ]
