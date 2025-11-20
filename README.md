@@ -1,15 +1,35 @@
-# Autoescuela Carrasco - Sistema de Gestión
+# 🚗 Autoescuela Carrasco - Sistema de Gestión
 
-Sistema web de gestión de alumnos para Autoescuela Carrasco (Franquicia AVAE).
+Sistema web completo de gestión de alumnos para **Autoescuela Carrasco** (Franquicia AVAE).
 
-## Características
+[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-5.2.8-green.svg)](https://www.djangoproject.com/)
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-purple.svg)](https://getbootstrap.com/)
+[![License](https://img.shields.io/badge/License-Private-red.svg)]()
 
-- **Gestión de Alumnos**: Dar de alta, editar y eliminar alumnos con sus datos personales y tipo de carnet
-- **Sistema de Bonos**: Añadir bonos de clases prácticas (50€ por defecto)
-- **Registro de Pagos**: Registrar pagos en efectivo o tarjeta
-- **Resumen Financiero**: Ver automáticamente cuánto debe cada alumno, cuánto ha pagado y el saldo pendiente
+## ✨ Características
+
+- **Gestión de Alumnos**: CRUD completo con datos personales y tipo de carnet
+- **Sistema de Cargos**: 10 conceptos predefinidos con precios automáticos
+  - Renovación de carnet (180€)
+  - Examen práctico (40€)
+  - Examen teórico (30€)
+  - Inscripción (300€)
+  - Práctica 90' (65€)
+  - Práctica 60' (43.33€)
+  - Práctica 45' (32.50€)
+  - Práctica 30' (80€)
+  - Bono 5 Prácticas 90' (300€)
+  - Otros (importe manual)
+- **Registro de Pagos**: Pagos en efectivo o tarjeta con seguimiento completo
+- **Sistema de Auditoría**: Historial completo de todas las acciones del sistema
+  - Tracking de login/logout
+  - Registro de creación, modificación y eliminación
+  - Captura de IP y timestamp
+  - Filtros por usuario, acción y tipo de entidad
+- **Resumen Financiero**: Cálculo automático de deudas y saldos pendientes
 - **Búsqueda**: Buscar alumnos por nombre, DNI o teléfono
-- **Autenticación**: Sistema de login con usuario y contraseña
+- **Autenticación**: Sistema de login multi-usuario preparado para múltiples secretarias
 
 ## Instalación y Uso
 
@@ -48,12 +68,13 @@ Sistema web de gestión de alumnos para Autoescuela Carrasco (Franquicia AVAE).
 3. Rellenar los datos del alumno (nombre, apellidos, DNI, teléfono, tipo de carnet)
 4. Guardar
 
-### Añadir un bono
+### Añadir un cargo
 
 1. Ir a la página del alumno
-2. Hacer clic en "Añadir Bono"
-3. El importe por defecto es 50€, pero se puede cambiar
-4. Guardar
+2. Hacer clic en "Añadir Cargo"
+3. Seleccionar el tipo de concepto del desplegable
+4. El importe se actualiza automáticamente según el concepto
+5. Guardar
 
 ### Registrar un pago
 
@@ -66,9 +87,16 @@ Sistema web de gestión de alumnos para Autoescuela Carrasco (Franquicia AVAE).
 ### Resumen financiero
 
 En la página de cada alumno se muestra:
-- **Total en Bonos**: Suma de todos los bonos añadidos
+- **Total en Cargos**: Suma de todos los cargos añadidos
 - **Total Pagado**: Suma de todos los pagos realizados
 - **Pendiente de Pago**: Diferencia entre lo que debe y lo que ha pagado
+
+### Historial de auditoría
+
+1. Hacer clic en "Historial" en la barra de navegación
+2. Ver todas las acciones realizadas en el sistema
+3. Filtrar por acción, tipo de entidad o usuario
+4. Ver detalles: usuario, fecha/hora, IP, descripción
 
 ## Tecnologías
 
@@ -93,21 +121,22 @@ WebApp/
 │   └── wsgi.py               # Punto de entrada WSGI
 │
 ├── students/                 # App principal
-│   ├── models.py             # Modelos: Student, LicenseType, Voucher, Payment
-│   ├── views.py              # 8 vistas (login, CRUD alumnos, bonos, pagos)
+│   ├── models.py             # Modelos: Student, LicenseType, Voucher, Payment, AuditLog
+│   ├── views.py              # 10 vistas (login, CRUD alumnos, cargos, pagos, historial)
 │   ├── forms.py              # Formularios: StudentForm, VoucherForm, PaymentForm
-│   ├── urls.py               # 9 rutas de la aplicación
+│   ├── urls.py               # 10 rutas de la aplicación
 │   ├── admin.py              # Configuración del admin de Django
-│   ├── migrations/           # Migraciones de base de datos
-│   └── templates/students/   # Plantillas HTML (8 archivos)
+│   ├── migrations/           # Migraciones de base de datos (0001, 0002, 0003)
+│   └── templates/students/   # Plantillas HTML (9 archivos)
 │       ├── base.html         # Plantilla base con Bootstrap 5
 │       ├── login.html        # Página de login
 │       ├── student_list.html # Lista de alumnos con búsqueda
 │       ├── student_detail.html # Detalle con resumen financiero
 │       ├── student_form.html # Crear/editar alumno
 │       ├── student_confirm_delete.html
-│       ├── voucher_form.html # Añadir bono (con símbolo €)
-│       └── payment_form.html # Registrar pago (con símbolo €)
+│       ├── voucher_form.html # Añadir cargo con selector de conceptos
+│       ├── payment_form.html # Registrar pago
+│       └── audit_log_list.html # Historial de auditoría
 │
 ├── db.sqlite3                # Base de datos SQLite
 ├── manage.py                 # Script de gestión Django
@@ -142,11 +171,13 @@ Usa las mismas credenciales (admin/admin123)
 - `notes`: TextField (opcional)
 - Métodos: `get_total_debt()`, `get_total_paid()`, `get_balance()`, `get_pending_amount()`
 
-**Voucher** (Bono de prácticas)
+**Voucher** (Cargo)
 - `student`: ForeignKey(Student) - Alumno asociado
-- `amount`: DecimalField(default=50.00) - Importe del bono
+- `concept_type`: CharField(choices) - Tipo de concepto (10 opciones)
+- `amount`: DecimalField - Importe del cargo
 - `date_created`: DateTimeField(auto_now_add) - Fecha de creación
-- `description`: TextField - Descripción del bono
+- `description`: CharField (opcional) - Descripción adicional
+- `created_by`: ForeignKey(User) - Usuario que creó el cargo
 
 **Payment** (Pago)
 - `student`: ForeignKey(Student) - Alumno asociado
@@ -155,6 +186,16 @@ Usa las mismas credenciales (admin/admin123)
 - `date_paid`: DateTimeField(auto_now_add) - Fecha del pago
 - `notes`: TextField (opcional)
 - `created_by`: ForeignKey(User) - Usuario que registró el pago
+
+**AuditLog** (Registro de Auditoría)
+- `user`: ForeignKey(User) - Usuario que realizó la acción
+- `action`: CharField(choices) - CREATE, UPDATE, DELETE, LOGIN, LOGOUT
+- `entity_type`: CharField(choices) - STUDENT, VOUCHER, PAYMENT, USER
+- `entity_id`: IntegerField - ID del objeto afectado
+- `entity_name`: CharField - Nombre/descripción del objeto
+- `description`: TextField - Descripción detallada
+- `timestamp`: DateTimeField(auto_now_add) - Fecha y hora
+- `ip_address`: GenericIPAddressField - Dirección IP del usuario
 
 ### Rutas (URLs)
 
@@ -166,8 +207,9 @@ Usa las mismas credenciales (admin/admin123)
 /students/<int:pk>/                           -> Detalle del alumno
 /students/<int:pk>/editar/                    -> Editar alumno
 /students/<int:pk>/eliminar/                  -> Eliminar alumno
-/students/<int:student_pk>/bono/nuevo/        -> Añadir bono
+/students/<int:student_pk>/bono/nuevo/        -> Añadir cargo
 /students/<int:student_pk>/pago/nuevo/        -> Registrar pago
+/students/historial/                          -> Historial de auditoría
 ```
 
 ### Configuración Django
