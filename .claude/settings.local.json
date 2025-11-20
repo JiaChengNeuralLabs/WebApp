@@ -11,7 +11,11 @@
       "Bash(python manage.py:*)",
       "Bash(timeout 5 bash -c 'while ! curl -s http://localhost:8080/students/login/ > nul 2>&1; do sleep 0.5; done')",
       "Bash(git config:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
