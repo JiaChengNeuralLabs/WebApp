@@ -6,6 +6,7 @@ El proyecto ya está preparado para desplegar en Render.com con las siguientes c
 
 ### Archivos Necesarios ✅
 - `requirements.txt` - Dependencias de Python
+- `runtime.txt` - Versión de Python (3.12.8)
 - `build.sh` - Script de construcción para Render
 - `autoescuela/settings.py` - Configurado para producción
 
