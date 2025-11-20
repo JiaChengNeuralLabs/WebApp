@@ -1,0 +1,78 @@
+========================================
+MEJORAS FUTURAS SUGERIDAS
+========================================
+
+FUNCIONALIDADES ADICIONALES RECOMENDADAS:
+
+1. SISTEMA DE CLASES:
+   - Calendario de clases practicas
+   - Registro de clases impartidas
+   - Descontar horas del bono al dar clases
+   - Historial de clases por alumno
+
+2. PROFESORES:
+   - Gestion de profesores/instructores
+   - Asignacion de profesores a clases
+   - Horarios de profesores
+
+3. VEHICULOS:
+   - Gestion de vehiculos de la autoescuela
+   - Mantenimiento y revisiones
+   - Asignacion de vehiculos a clases
+
+4. EXAMENES:
+   - Registro de examenes teoricos y practicos
+   - Resultados y fechas
+   - Estadisticas de aprobados
+
+5. DOCUMENTACION:
+   - Subir documentos del alumno (fotos, DNI, certificados)
+   - Expediente digital completo
+
+6. REPORTES:
+   - Informes financieros mensuales
+   - Estadisticas de alumnos
+   - Exportar a PDF/Excel
+   - Graficas de ingresos
+
+7. NOTIFICACIONES:
+   - Email/SMS a alumnos
+   - Recordatorios de clases
+   - Avisos de pagos pendientes
+
+8. FACTURAS:
+   - Generacion automatica de facturas
+   - Numeracion correlativa
+   - Impresion de recibos
+
+9. USUARIOS MULTIPLES:
+   - Diferentes niveles de acceso
+   - Profesores con acceso limitado
+   - Registro de quien hace cada cambio
+
+10. CONFIGURACION:
+    - Precio de bonos configurable
+    - Datos de la autoescuela
+    - Personalizar tipos de carnet
+
+11. BACKUP AUTOMATICO:
+    - Copias de seguridad periodicas
+    - Exportar/importar datos
+
+12. DASHBOARD:
+    - Panel principal con estadisticas
+    - Resumen de ingresos del mes
+    - Alumnos activos
+    - Proximas clases
+
+13. ALUMNOS EN ESPERA:
+    - Lista de espera para clases
+    - Sistema de turnos
+
+14. DESCUENTOS/PROMOCIONES:
+    - Aplicar descuentos
+    - Bonos especiales
+    - Packs de clases
+
+Estas mejoras se pueden implementar gradualmente segun las necesidades
+de la autoescuela.

@@ -1,0 +1,138 @@
+========================================
+COMANDOS UTILES - AUTOESCUELA CARRASCO
+========================================
+
+IMPORTANTE: Todos estos comandos deben ejecutarse desde la terminal
+en la carpeta del proyecto (C:\Users\Jia.Cheng\Desktop\WebApp)
+y con el entorno virtual activado.
+
+ACTIVAR ENTORNO VIRTUAL:
+------------------------
+venv\Scripts\activate
+
+INICIAR SERVIDOR:
+-----------------
+python manage.py runserver 8080
+
+CREAR USUARIO ADICIONAL:
+------------------------
+python manage.py createsuperuser
+
+HACER BACKUP DE LA BASE DE DATOS:
+----------------------------------
+1. Copiar el archivo db.sqlite3 a otra ubicacion
+2. Nombrarlo con la fecha, ej: db_backup_2025_01_20.sqlite3
+
+RESTAURAR BACKUP:
+-----------------
+1. Detener el servidor
+2. Reemplazar db.sqlite3 con el archivo de backup
+3. Iniciar el servidor
+
+VER ESTRUCTURA DE BASE DE DATOS:
+---------------------------------
+python manage.py dbshell
+.schema
+.quit
+
+REINICIAR BASE DE DATOS (¡CUIDADO! BORRA TODO):
+------------------------------------------------
+1. Detener el servidor
+2. Eliminar db.sqlite3
+3. python manage.py migrate
+4. python init_data.py
+
+ACCEDER AL PANEL DE ADMINISTRACION:
+------------------------------------
+1. Iniciar servidor
+2. Ir a: http://localhost:8080/admin
+3. Usuario: admin / Contraseña: admin123
+
+CREAR MIGRACIONES DESPUES DE CAMBIOS EN MODELOS:
+-------------------------------------------------
+python manage.py makemigrations
+python manage.py migrate
+
+VER LOGS DEL SERVIDOR:
+----------------------
+El servidor muestra los logs en la terminal donde se ejecuta
+
+EXPORTAR DATOS:
+---------------
+python manage.py dumpdata students > backup_data.json
+
+IMPORTAR DATOS:
+---------------
+python manage.py loaddata backup_data.json
+
+CAMBIAR CONTRASEÑA DE USUARIO:
+-------------------------------
+python manage.py changepassword admin
+
+LIMPIAR SESIONES ANTIGUAS:
+---------------------------
+python manage.py clearsessions
+
+VERIFICAR PROYECTO:
+-------------------
+python manage.py check
+
+VER URLS DISPONIBLES:
+---------------------
+python manage.py show_urls
+(Requiere django-extensions: pip install django-extensions)
+
+SHELL INTERACTIVA DE DJANGO:
+-----------------------------
+python manage.py shell
+
+Desde la shell puedes ejecutar:
+>>> from students.models import Student, Voucher, Payment
+>>> Student.objects.all()
+>>> Student.objects.filter(first_name='Juan')
+
+CREAR DATOS DE PRUEBA:
+----------------------
+Ya existe el archivo init_data.py que crea tipos de carnet
+Para ejecutarlo: python init_data.py
+
+ACTUALIZAR DJANGO (CON CUIDADO):
+---------------------------------
+pip install --upgrade django
+
+VER PAQUETES INSTALADOS:
+------------------------
+pip list
+
+CONGELAR DEPENDENCIAS:
+----------------------
+pip freeze > requirements.txt
+
+INSTALAR DESDE REQUIREMENTS:
+-----------------------------
+pip install -r requirements.txt
+
+DETENER SERVIDOR:
+-----------------
+Ctrl + C en la terminal donde esta corriendo
+
+========================================
+RESOLUCION DE PROBLEMAS COMUNES:
+========================================
+
+PROBLEMA: Puerto 8080 en uso
+SOLUCION: python manage.py runserver 8081
+
+PROBLEMA: Error al iniciar
+SOLUCION: Verificar que el entorno virtual este activado
+
+PROBLEMA: Pagina no carga
+SOLUCION: Verificar que el servidor este corriendo
+
+PROBLEMA: Error de base de datos
+SOLUCION: python manage.py migrate
+
+PROBLEMA: Cambios no se ven
+SOLUCION: Refrescar navegador (Ctrl + F5)
+
+========================================

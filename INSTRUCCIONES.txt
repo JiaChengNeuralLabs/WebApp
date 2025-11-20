@@ -1,0 +1,61 @@
+========================================
+AUTOESCUELA CARRASCO - INSTRUCCIONES
+========================================
+
+INICIO RAPIDO:
+--------------
+1. Hacer doble clic en "start_server.bat"
+2. Esperar a que se abra el navegador
+3. Iniciar sesion con:
+   Usuario: admin
+   Contraseña: admin123
+
+COMO USAR:
+----------
+
+1. CREAR UN ALUMNO:
+   - Clic en "Nuevo Alumno"
+   - Rellenar: Nombre, Apellidos, DNI, Telefono, Tipo de Carnet
+   - Guardar
+
+2. AÑADIR UN BONO (50 euros):
+   - Entrar en la pagina del alumno
+   - Clic en "Añadir Bono"
+   - Confirmar (por defecto 50 euros)
+   
+3. REGISTRAR UN PAGO:
+   - Entrar en la pagina del alumno
+   - Clic en "Registrar Pago"
+   - Introducir cantidad
+   - Seleccionar metodo: Efectivo o Tarjeta
+   - Guardar
+
+4. VER ESTADO FINANCIERO:
+   En cada pagina de alumno se muestra:
+   - Total en Bonos: Lo que debe pagar
+   - Total Pagado: Lo que ya ha pagado
+   - Pendiente: Lo que falta por pagar
+
+BUSCAR ALUMNOS:
+---------------
+Usa el buscador en la lista de alumnos para buscar por:
+- Nombre
+- Apellidos
+- DNI
+- Telefono
+
+TIPOS DE CARNET DISPONIBLES:
+-----------------------------
+- B: Automoviles
+- A: Motocicletas
+- A1: Motos hasta 125cc
+- A2: Motos hasta 35kW
+- C: Camiones
+- D: Autobuses
+
+SOPORTE:
+--------
+Si necesitas ayuda adicional o quieres añadir mas funciones,
+contacta con tu desarrollador.
+
+Colores corporativos AVAE: Verde y Blanco

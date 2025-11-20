@@ -1,0 +1,203 @@
+========================================
+GUIA VISUAL - AUTOESCUELA CARRASCO
+========================================
+
+Esta guia describe lo que veras en cada pantalla de la aplicacion.
+
+========================================
+1. PANTALLA DE LOGIN
+========================================
+
+Veras:
+- Logo "Autoescuela Carrasco" en verde
+- Texto "Franquicia AVAE"
+- Campo de Usuario
+- Campo de Contraseña
+- Boton verde "Entrar"
+
+Colores: Fondo blanco, cabecera verde
+
+========================================
+2. LISTA DE ALUMNOS (Pantalla Principal)
+========================================
+
+Barra superior (verde):
+- Logo "Autoescuela Carrasco"
+- Menu: Alumnos, Nuevo Alumno
+- Usuario actual y boton Salir
+
+Contenido:
+- Titulo "Lista de Alumnos"
+- Boton "Nuevo Alumno" (verde)
+- Buscador (buscar por nombre, DNI, telefono)
+- Tabla con columnas:
+  * Nombre
+  * DNI
+  * Telefono
+  * Tipo de Carnet (badge verde)
+  * Estado Financiero (verde si al dia, rojo si debe)
+  * Botones: Ver (azul), Editar (amarillo)
+
+========================================
+3. CREAR/EDITAR ALUMNO
+========================================
+
+Formulario con campos:
+- Nombre *
+- Apellidos *
+- DNI *
+- Telefono *
+- Email
+- Direccion
+- Tipo de Carnet * (desplegable: B, A, A1, A2, C, D)
+- Activo (checkbox)
+- Notas
+
+Boton verde grande: "Guardar"
+
+========================================
+4. DETALLE DE ALUMNO
+========================================
+
+Dividido en dos columnas:
+
+COLUMNA IZQUIERDA:
+- Informacion del Alumno
+  * Nombre completo
+  * DNI
+  * Telefono
+  * Email
+  * Direccion
+  * Tipo de Carnet (badge verde)
+  * Fecha de Registro
+  * Notas
+
+COLUMNA DERECHA:
+- Resumen Financiero (destacado con borde verde)
+  * Total en Bonos: XXX€
+  * Total Pagado: XXX€ (en verde)
+  * Pendiente de Pago: XXX€ (en rojo si debe)
+  
+- Botones:
+  * "Añadir Bono" (verde)
+  * "Registrar Pago" (azul)
+
+ABAJO:
+- Dos tablas lado a lado:
+  
+  TABLA BONOS:
+  * Fecha
+  * Descripcion
+  * Importe
+  
+  TABLA PAGOS:
+  * Fecha
+  * Metodo (Efectivo/Tarjeta)
+  * Importe (en verde)
+
+========================================
+5. AÑADIR BONO
+========================================
+
+Muestra:
+- Nombre del alumno
+- Campo "Importe" (por defecto 50€)
+- Campo "Descripcion"
+- Boton verde "Añadir Bono"
+
+========================================
+6. REGISTRAR PAGO
+========================================
+
+Muestra:
+- Nombre del alumno
+- Cantidad pendiente (en rojo si debe)
+- Campo "Cantidad" (cuanto paga)
+- Desplegable "Metodo de Pago":
+  * Efectivo
+  * Tarjeta
+- Campo "Notas" (opcional)
+- Boton azul "Registrar Pago"
+
+========================================
+7. BUSQUEDA DE ALUMNOS
+========================================
+
+En la lista de alumnos, usa el buscador para:
+- Escribir nombre: "Juan" -> muestra todos los Juan
+- Escribir DNI: "12345" -> muestra coincidencias
+- Escribir telefono: "600" -> muestra coincidencias
+
+Resultados se filtran automaticamente.
+
+========================================
+EJEMPLO DE USO COMPLETO:
+========================================
+
+CASO: Juan Perez quiere sacarse el carnet B
+
+PASO 1: Crear alumno
+- Nuevo Alumno
+- Nombre: Juan
+- Apellidos: Perez Garcia
+- DNI: 12345678A
+- Telefono: 600123456
+- Email: juan@email.com
+- Tipo de Carnet: B
+- Guardar
+
+PASO 2: Juan quiere un bono
+- Entrar en Juan Perez
+- Añadir Bono
+- Importe: 50€
+- Guardar
+
+Ahora Juan debe: 50€
+
+PASO 3: Juan paga 30€ en efectivo
+- Registrar Pago
+- Cantidad: 30
+- Metodo: Efectivo
+- Guardar
+
+Ahora:
+- Total Bonos: 50€
+- Total Pagado: 30€
+- Pendiente: 20€ (en rojo)
+
+PASO 4: Juan paga los 20€ restantes con tarjeta
+- Registrar Pago
+- Cantidad: 20
+- Metodo: Tarjeta
+- Guardar
+
+Ahora:
+- Total Bonos: 50€
+- Total Pagado: 50€
+- Pendiente: 0€ (en verde "Al dia")
+
+========================================
+COLORES UTILIZADOS:
+========================================
+
+VERDE (#2ecc71):
+- Botones principales
+- Badges de tipo de carnet
+- Cantidades positivas
+- "Al dia"
+
+ROJO:
+- Deudas pendientes
+- Alertas
+
+AZUL:
+- Botones secundarios (ver, registrar pago)
+
+AMARILLO:
+- Boton editar
+
+BLANCO/GRIS CLARO:
+- Fondos
+- Cards
+
+========================================

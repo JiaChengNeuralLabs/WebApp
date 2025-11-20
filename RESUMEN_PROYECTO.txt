@@ -1,0 +1,103 @@
+========================================
+AUTOESCUELA CARRASCO - RESUMEN DEL PROYECTO
+========================================
+
+UBICACION:
+----------
+C:\Users\Jia.Cheng\Desktop\WebApp
+
+ARCHIVOS IMPORTANTES:
+---------------------
+- start_server.bat         -> Doble clic para iniciar la aplicacion
+- INSTRUCCIONES.txt        -> Guia de uso rapida
+- README.md               -> Documentacion tecnica completa
+- MEJORAS_FUTURAS.txt     -> Ideas para expandir la aplicacion
+- db.sqlite3              -> Base de datos (NO ELIMINAR)
+
+CREDENCIALES:
+-------------
+Usuario: admin
+Contraseña: admin123
+
+ACCESO:
+-------
+1. Doble clic en "start_server.bat"
+2. Se abrira automaticamente en: http://localhost:8080
+3. Iniciar sesion
+
+FUNCIONALIDADES IMPLEMENTADAS:
+-------------------------------
+✓ Sistema de login con usuario y contraseña
+✓ Gestion completa de alumnos (crear, editar, eliminar, buscar)
+✓ Registro de datos: nombre, apellidos, DNI, telefono, email, direccion
+✓ Tipos de carnet: B, A, A1, A2, C, D
+✓ Sistema de bonos (50€ por defecto, personalizable)
+✓ Registro de pagos (Efectivo/Tarjeta)
+✓ Calculo automatico de deudas y saldo
+✓ Busqueda de alumnos por nombre, DNI o telefono
+✓ Interfaz con colores corporativos AVAE (verde y blanco)
+✓ Historial completo de bonos y pagos por alumno
+✓ Panel de administracion Django
+
+RESUMEN FINANCIERO POR ALUMNO:
+-------------------------------
+Cada alumno muestra automaticamente:
+- Total en Bonos: Suma de todos los bonos
+- Total Pagado: Suma de todos los pagos
+- Pendiente de Pago: Diferencia (lo que falta por pagar)
+
+TECNOLOGIA:
+-----------
+- Python 3.13
+- Django 5.2.8 (Framework web)
+- SQLite (Base de datos)
+- Bootstrap 5.3 (Diseño responsive)
+- HTML5 + CSS3
+
+ESTRUCTURA DE LA BASE DE DATOS:
+--------------------------------
+- LicenseType: Tipos de carnet
+- Student: Datos de alumnos
+- Voucher: Bonos de clases
+- Payment: Registro de pagos
+
+ARCHIVOS TECNICOS:
+------------------
+autoescuela/          -> Configuracion del proyecto Django
+students/             -> Aplicacion principal
+  - models.py         -> Modelos de datos
+  - views.py          -> Logica de vistas
+  - forms.py          -> Formularios
+  - urls.py           -> URLs de la aplicacion
+  - templates/        -> Plantillas HTML
+  - admin.py          -> Configuracion del panel admin
+
+COLORES CORPORATIVOS AVAE:
+---------------------------
+Verde principal: #2ecc71
+Verde oscuro: #27ae60
+Blanco: #ffffff
+
+MEJORAS SUGERIDAS (Ver MEJORAS_FUTURAS.txt):
+---------------------------------------------
+- Sistema de clases y calendario
+- Gestion de profesores y vehiculos
+- Registro de examenes
+- Generacion de facturas
+- Reportes e informes
+- Notificaciones por email/SMS
+- Dashboard con estadisticas
+- Y mucho mas...
+
+BACKUP:
+-------
+IMPORTANTE: Hacer copias de seguridad periodicas de:
+- db.sqlite3 (contiene todos los datos)
+
+SOPORTE:
+--------
+Para añadir nuevas funcionalidades o resolver problemas,
+contacta con tu desarrollador.
+
+Creado con Django - Framework web de Python
+========================================

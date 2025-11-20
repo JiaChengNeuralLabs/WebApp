@@ -1,0 +1,45 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Eliminar Alumno - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <a href="{% url 'student_detail' student.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Eliminacion
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Estas seguro de que quieres eliminar este alumno?</h5>
+                <div class="alert alert-warning">
+                    <strong><i class="bi bi-person-fill"></i> {{ student.first_name }} {{ student.last_name }}</strong><br>
+                    <small>DNI: {{ student.dni }}</small>
+                </div>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    Esta accion no se puede deshacer. Se eliminaran todos los bonos y pagos asociados.
+                </p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash-fill"></i> Si, eliminar alumno
+                        </button>
+                        <a href="{% url 'student_detail' student.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Lista de Alumnos - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-people-fill text-green"></i> Lista de Alumnos</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'student_create' %}" class="btn btn-success">
+            <i class="bi bi-person-plus-fill"></i> Nuevo Alumno
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por nombre, apellidos, DNI o telefono..." value="{{ query }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if students %}
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list-ul"></i> Alumnos Registrados ({{ students.count }})
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>DNI</th>
+                        <th>Telefono</th>
+                        <th>Tipo de Carnet</th>
+                        <th class="text-center">Estado Financiero</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>
+                            <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                        </td>
+                        <td>{{ student.dni }}</td>
+                        <td><i class="bi bi-telephone-fill"></i> {{ student.phone }}</td>
+                        <td><span class="badge badge-green">{{ student.license_type }}</span></td>
+                        <td class="text-center">
+                            {% with pending=student.get_pending_amount %}
+                                {% if pending > 0 %}
+                                    <span class="badge bg-danger">Debe: {{ pending }} euros</span>
+                                {% else %}
+                                    <span class="badge bg-success">Al dia</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'student_detail' student.pk %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye-fill"></i> Ver
+                            </a>
+                            <a href="{% url 'student_edit' student.pk %}" class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="bi bi-info-circle-fill"></i>
+    {% if query %}
+        No se encontraron alumnos que coincidan con "{{ query }}".
+    {% else %}
+        No hay alumnos registrados. <a href="{% url 'student_create' %}">Crear el primero</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

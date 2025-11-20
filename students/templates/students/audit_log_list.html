@@ -1,0 +1,137 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Historial de Auditoría - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h2><i class="bi bi-clock-history"></i> Historial de Auditoría</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{% url 'student_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a Alumnos
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="action" class="form-label">Acción</label>
+                <select name="action" id="action" class="form-control">
+                    <option value="">Todas</option>
+                    {% for value, label in action_choices %}
+                    <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="entity_type" class="form-label">Tipo de Entidad</label>
+                <select name="entity_type" id="entity_type" class="form-control">
+                    <option value="">Todas</option>
+                    {% for value, label in entity_choices %}
+                    <option value="{{ value }}" {% if entity_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="user" class="form-label">Usuario</label>
+                <input type="text" name="user" id="user" class="form-control" placeholder="Buscar por usuario" value="{{ user_filter }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de logs -->
+<div class="card">
+    <div class="card-body">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha y Hora</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Tipo</th>
+                        <th>Entidad</th>
+                        <th>Descripción</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in page_obj %}
+                    <tr>
+                        <td><small>{{ log.timestamp|date:"d/m/Y H:i:s" }}</small></td>
+                        <td><strong>{{ log.user.username|default:"Sistema" }}</strong></td>
+                        <td>
+                            {% if log.action == 'CREATE' %}
+                                <span class="badge bg-success">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'UPDATE' %}
+                                <span class="badge bg-warning text-dark">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'DELETE' %}
+                                <span class="badge bg-danger">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'LOGIN' %}
+                                <span class="badge bg-info">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'LOGOUT' %}
+                                <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ log.get_entity_type_display }}</span>
+                        </td>
+                        <td><small>{{ log.entity_name }}</small></td>
+                        <td><small>{{ log.description }}</small></td>
+                        <td><small class="text-muted">{{ log.ip_address|default:"-" }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Navegación de páginas">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if action_filter %}&action={{ action_filter }}{% endif %}{% if entity_filter %}&entity_type={{ entity_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}">Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if entity_filter %}&entity_type={{ entity_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}">Anterior</a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if entity_filter %}&entity_type={{ entity_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if entity_filter %}&entity_type={{ entity_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}">Última</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <p class="text-muted text-center mt-3">
+            <small>Total de registros: {{ page_obj.paginator.count }}</small>
+        </p>
+
+        {% else %}
+        <p class="text-muted text-center mb-0">No hay registros en el historial de auditoría</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

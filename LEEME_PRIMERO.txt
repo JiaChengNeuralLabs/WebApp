@@ -1,0 +1,133 @@
+========================================
+AUTOESCUELA CARRASCO
+Sistema de Gestion de Alumnos
+========================================
+
+BIENVENIDO!
+
+Este es el sistema de gestion para Autoescuela Carrasco.
+
+========================================
+INICIO RAPIDO (3 PASOS):
+========================================
+
+1. Hacer doble clic en: start_server.bat
+2. Esperar a que se abra el navegador
+3. Iniciar sesion:
+   Usuario: admin
+   Contraseña: admin123
+
+Y ya esta! La aplicacion esta lista para usar.
+
+========================================
+DOCUMENTACION DISPONIBLE:
+========================================
+
+ARCHIVOS PRINCIPALES:
+---------------------
+★ LEEME_PRIMERO.txt (este archivo)
+  Informacion basica e indice de documentacion
+
+★ start_server.bat
+  DOBLE CLIC AQUI PARA INICIAR LA APLICACION
+
+GUIAS DE USO:
+-------------
+★ INSTRUCCIONES.txt
+  Como usar la aplicacion paso a paso
+
+★ GUIA_VISUAL.txt
+  Descripcion de todas las pantallas
+
+★ RESUMEN_PROYECTO.txt
+  Vision general del proyecto completo
+
+DOCUMENTACION TECNICA:
+----------------------
+★ README.md
+  Documentacion tecnica completa
+  
+★ COMANDOS_UTILES.txt
+  Comandos para mantenimiento y administracion
+
+IDEAS Y MEJORAS:
+----------------
+★ MEJORAS_FUTURAS.txt
+  Lista de funcionalidades que se pueden añadir
+
+========================================
+INFORMACION BASICA:
+========================================
+
+QUE HACE ESTA APLICACION:
+--------------------------
+- Gestionar alumnos de la autoescuela
+- Registrar bonos de clases (50€ cada uno)
+- Registrar pagos (efectivo o tarjeta)
+- Calcular automaticamente cuanto debe cada alumno
+- Buscar alumnos rapidamente
+- Mantener historial completo de pagos y bonos
+
+TIPOS DE CARNET DISPONIBLES:
+-----------------------------
+B (Coches), A (Motos), A1, A2, C (Camiones), D (Autobuses)
+
+USUARIOS:
+---------
+Usuario inicial: admin
+Contraseña: admin123
+
+(Puedes crear mas usuarios desde el panel de administracion)
+
+========================================
+SOPORTE RAPIDO:
+========================================
+
+PROBLEMA: No arranca el servidor
+SOLUCION: Verificar que tienes Python instalado
+
+PROBLEMA: Error al abrir
+SOLUCION: Asegurate de hacer doble clic en start_server.bat
+
+PROBLEMA: Olvide la contraseña
+SOLUCION: Contactar con el desarrollador o:
+  1. Abrir terminal en esta carpeta
+  2. venv\Scripts\activate
+  3. python manage.py changepassword admin
+
+PROBLEMA: Perdi datos
+SOLUCION: Restaurar desde backup (ver COMANDOS_UTILES.txt)
+
+========================================
+IMPORTANTE - BACKUP:
+========================================
+
+HACER BACKUP REGULARMENTE de:
+- db.sqlite3 (contiene TODOS los datos)
+
+Como hacer backup:
+1. Copiar db.sqlite3 a otra ubicacion
+2. Nombrarlo con fecha: db_backup_2025_01_20.sqlite3
+
+========================================
+SIGUIENTES PASOS:
+========================================
+
+1. Lee INSTRUCCIONES.txt para aprender a usar la app
+2. Lee GUIA_VISUAL.txt para ver como se ve cada pantalla
+3. Prueba a crear un alumno de ejemplo
+4. Prueba a añadir un bono y un pago
+5. Explora las diferentes funciones
+
+========================================
+CONTACTO:
+========================================
+
+Para añadir nuevas funcionalidades, resolver problemas
+o hacer consultas tecnicas, contacta con tu desarrollador.
+
+Creado con Python y Django
+Diseño corporativo AVAE (verde y blanco)
+
+Version 1.0 - Enero 2025
+========================================

@@ -1,0 +1,127 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Añadir Cargo - {{ student }} - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <a href="{% url 'student_detail' student.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-clipboard-plus-fill"></i> Añadir Cargo
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong><i class="bi bi-person-fill"></i> Alumno:</strong> {{ student.first_name }} {{ student.last_name }}
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.concept_type.id_for_label }}" class="form-label">{{ form.concept_type.label }} *</label>
+                        {{ form.concept_type }}
+                        {% if form.concept_type.errors %}
+                            <div class="text-danger">{{ form.concept_type.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">Seleccione el tipo de cargo a añadir</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }} *</label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                            <div class="text-danger">{{ form.amount.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted" id="price-hint">El importe se actualizará automáticamente según el concepto seleccionado</small>
+                    </div>
+
+                    <div class="mb-3" id="description-field">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger">{{ form.description.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">Para el concepto "Otros" es recomendable añadir una descripción</small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle-fill"></i> Añadir Cargo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Diccionario de precios predefinidos (parseado desde JSON)
+const conceptPrices = {{ concept_prices_json|safe }};
+
+// Función para actualizar el importe cuando cambia el concepto
+function updateAmount() {
+    const conceptSelect = document.getElementById('id_concept_type');
+    const amountInput = document.getElementById('id_amount');
+    const descriptionField = document.getElementById('description-field');
+    const priceHint = document.getElementById('price-hint');
+
+    if (!conceptSelect || !amountInput || !priceHint) {
+        console.error('No se encontraron los elementos necesarios');
+        return;
+    }
+
+    const selectedConcept = conceptSelect.value;
+    const price = conceptPrices[selectedConcept];
+
+    console.log('Concepto seleccionado:', selectedConcept, 'Precio:', price);
+
+    if (selectedConcept === 'OTHER') {
+        // Para "Otros", limpiar el campo y hacerlo editable
+        amountInput.value = '';
+        amountInput.readOnly = false;
+        amountInput.required = true;
+        if (descriptionField) descriptionField.style.display = 'block';
+        priceHint.textContent = 'Ingrese el importe manualmente para conceptos personalizados';
+    } else {
+        // Para conceptos predefinidos, poner el precio automáticamente
+        if (price !== undefined) {
+            amountInput.value = price.toFixed(2);
+            amountInput.readOnly = true;
+            amountInput.required = false;
+            if (descriptionField) descriptionField.style.display = 'block';
+            priceHint.textContent = 'Precio predefinido: ' + price.toFixed(2) + '€';
+        }
+    }
+}
+
+// Ejecutar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM cargado, inicializando...');
+    console.log('Precios disponibles:', conceptPrices);
+
+    const conceptSelect = document.getElementById('id_concept_type');
+
+    if (conceptSelect) {
+        // Añadir el event listener directamente en JavaScript
+        conceptSelect.addEventListener('change', function() {
+            console.log('Cambio detectado en selector');
+            updateAmount();
+        });
+
+        // Ejecutar una vez al cargar
+        updateAmount();
+    } else {
+        console.error('No se encontró el selector de conceptos');
+    }
+});
+</script>
+{% endblock %}
