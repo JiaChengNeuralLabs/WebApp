@@ -10,5 +10,8 @@ python manage.py migrate
 # Crear tipos de carnet por defecto si no existen
 python manage.py createdefaultlicenses
 
+# Generar tokens para pagos que no tienen
+python manage.py generate_payment_tokens
+
 # Crear superusuario por defecto si no existe
 python manage.py createdefaultsu
