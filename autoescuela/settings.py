@@ -11,8 +11,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
-import dj_database_url
 from pathlib import Path
+
+# Import dj_database_url only if available (production)
+try:
+    import dj_database_url
+    HAS_DJ_DATABASE_URL = True
+except ImportError:
+    HAS_DJ_DATABASE_URL = False
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,6 +40,10 @@ if allowed_hosts_env:
 else:
     # En desarrollo: localhost. En Render: permitir dominios .onrender.com
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
+
+# Número de WhatsApp de la autoescuela (formato internacional sin +)
+# Ejemplo: 34612345678 para +34 612 34 56 78
+WHATSAPP_PHONE = os.environ.get('WHATSAPP_PHONE', '34000000000')
 
 
 # Application definition
@@ -83,7 +93,7 @@ WSGI_APPLICATION = 'autoescuela.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # Usar PostgreSQL en producción, SQLite en desarrollo
-if os.environ.get('DATABASE_URL'):
+if os.environ.get('DATABASE_URL') and HAS_DJ_DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.config(
             default=os.environ.get('DATABASE_URL'),
@@ -136,6 +146,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Media files (User uploaded files)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Whitenoise configuration
 STORAGES = {

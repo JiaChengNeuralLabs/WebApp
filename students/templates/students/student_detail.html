@@ -132,8 +132,10 @@
                         <thead>
                             <tr>
                                 <th>Fecha</th>
-                                <th>Metodo</th>
+                                <th>Método</th>
                                 <th class="text-end">Importe</th>
+                                <th>Recibo</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -148,6 +150,26 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-end"><strong class="text-success">{{ payment.amount }}€</strong></td>
+                                <td>
+                                    {% if payment.receipt %}
+                                        <a href="{{ payment.receipt.url }}" target="_blank" class="badge bg-success" title="Ver recibo">
+                                            <i class="bi bi-file-earmark-check"></i> Ver
+                                        </a>
+                                    {% else %}
+                                        <span class="badge bg-warning" title="Recibo pendiente">
+                                            <i class="bi bi-hourglass-split"></i> Pendiente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% load settings_tags %}
+                                    <a href="{{ payment|whatsapp_url }}"
+                                       target="_blank"
+                                       class="btn btn-sm btn-success"
+                                       title="Enviar enlace por WhatsApp">
+                                        <i class="bi bi-whatsapp"></i>
+                                    </a>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>

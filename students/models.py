@@ -18,6 +18,7 @@ Relaciones: LicenseType → Student → (Voucher + Payment)
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+import uuid
 
 
 class LicenseType(models.Model):
@@ -208,6 +209,25 @@ class Payment(models.Model):
         null=True,
         verbose_name="Registrado por"
     )
+    # Campos para recibo
+    receipt = models.FileField(
+        upload_to='receipts/%Y/%m/',
+        blank=True,
+        null=True,
+        verbose_name="Recibo"
+    )
+    upload_token = models.CharField(
+        max_length=100,
+        unique=True,
+        blank=True,
+        null=True,
+        verbose_name="Token de subida"
+    )
+    receipt_uploaded_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Fecha de subida del recibo"
+    )
 
     class Meta:
         verbose_name = "Pago"
@@ -216,6 +236,49 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Pago {self.id} - {self.student} - {self.amount}€ ({self.get_payment_method_display()})"
+
+    def save(self, *args, **kwargs):
+        # Generar token único si no existe
+        if not self.upload_token:
+            self.upload_token = str(uuid.uuid4())
+        super().save(*args, **kwargs)
+
+    def has_receipt(self):
+        """Retorna True si el pago tiene recibo adjunto"""
+        return bool(self.receipt)
+
+    def get_upload_url(self):
+        """Genera la URL pública para subir el recibo"""
+        from django.urls import reverse
+        return reverse('upload_receipt', kwargs={'token': self.upload_token})
+
+    def get_whatsapp_url(self, phone_number):
+        """Genera URL de WhatsApp con mensaje y enlace para subir recibo"""
+        from django.conf import settings
+        import urllib.parse
+
+        # Construir URL completa del sitio
+        base_url = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'
+        if not base_url.startswith('http'):
+            protocol = 'https' if not settings.DEBUG else 'http'
+            base_url = f"{protocol}://{base_url}"
+
+        upload_url = f"{base_url}{self.get_upload_url()}"
+
+        # Mensaje para WhatsApp
+        message = (
+            f"📄 Subir recibo de pago\n"
+            f"Alumno: {self.student.first_name} {self.student.last_name}\n"
+            f"Cantidad: {self.amount}€\n"
+            f"Enlace: {upload_url}"
+        )
+
+        # Formato internacional del número (sin + ni espacios)
+        clean_phone = phone_number.replace('+', '').replace(' ', '').replace('-', '')
+
+        # URL de WhatsApp
+        whatsapp_url = f"https://wa.me/{clean_phone}?text={urllib.parse.quote(message)}"
+        return whatsapp_url
 
 
 class AuditLog(models.Model):

@@ -302,3 +302,47 @@ def audit_log_list(request):
         'entity_choices': AuditLog.ENTITY_CHOICES,
     }
     return render(request, 'students/audit_log_list.html', context)
+
+
+def upload_receipt(request, token):
+    """Vista pública para subir recibo (sin login requerido)"""
+    from django.utils import timezone
+    from django.http import HttpResponse
+
+    # Buscar el pago por token
+    payment = get_object_or_404(Payment, upload_token=token)
+
+    if request.method == 'POST':
+        # Verificar que se subió un archivo
+        if 'receipt_file' not in request.FILES:
+            messages.error(request, 'No se seleccionó ningún archivo.')
+        else:
+            receipt_file = request.FILES['receipt_file']
+
+            # Validar tipo de archivo (solo imágenes y PDFs)
+            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf']
+            if receipt_file.content_type not in allowed_types:
+                messages.error(request, 'Solo se permiten archivos de imagen (JPG, PNG, GIF) o PDF.')
+            elif receipt_file.size > 10 * 1024 * 1024:  # Máximo 10MB
+                messages.error(request, 'El archivo es demasiado grande. Máximo 10MB.')
+            else:
+                # Guardar el archivo
+                payment.receipt = receipt_file
+                payment.receipt_uploaded_at = timezone.now()
+                payment.save()
+
+                messages.success(request, '¡Recibo subido correctamente!')
+
+                # Mostrar página de éxito
+                return render(request, 'students/upload_receipt_success.html', {
+                    'payment': payment,
+                })
+
+    # Verificar si ya tiene recibo
+    already_uploaded = payment.has_receipt()
+
+    context = {
+        'payment': payment,
+        'already_uploaded': already_uploaded,
+    }
+    return render(request, 'students/upload_receipt.html', context)

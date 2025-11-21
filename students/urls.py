@@ -12,4 +12,6 @@ urlpatterns = [
     path('<int:student_pk>/bono/nuevo/', views.voucher_create, name='voucher_create'),
     path('<int:student_pk>/pago/nuevo/', views.payment_create, name='payment_create'),
     path('historial/', views.audit_log_list, name='audit_log_list'),
+    # Ruta pública para subir recibos (sin login)
+    path('recibo/<str:token>/', views.upload_receipt, name='upload_receipt'),
 ]
