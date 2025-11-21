@@ -252,16 +252,25 @@ class Payment(models.Model):
         from django.urls import reverse
         return reverse('upload_receipt', kwargs={'token': self.upload_token})
 
-    def get_whatsapp_url(self, phone_number):
+    def get_whatsapp_url(self, phone_number, request=None):
         """Genera URL de WhatsApp con mensaje y enlace para subir recibo"""
         from django.conf import settings
         import urllib.parse
 
         # Construir URL completa del sitio
-        base_url = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'
-        if not base_url.startswith('http'):
-            protocol = 'https' if not settings.DEBUG else 'http'
-            base_url = f"{protocol}://{base_url}"
+        if request:
+            # Usar el host de la petición actual
+            protocol = 'https' if request.is_secure() else 'http'
+            base_url = f"{protocol}://{request.get_host()}"
+        else:
+            # Fallback: construir desde settings
+            base_url = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'
+            # Filtrar dominios genéricos como .onrender.com
+            if base_url.startswith('.'):
+                base_url = 'webapp-btp8.onrender.com'  # Usar el dominio específico
+            if not base_url.startswith('http'):
+                protocol = 'https' if not settings.DEBUG else 'http'
+                base_url = f"{protocol}://{base_url}"
 
         upload_url = f"{base_url}{self.get_upload_url()}"
 

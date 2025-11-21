@@ -163,7 +163,7 @@
                                 </td>
                                 <td>
                                     {% load settings_tags %}
-                                    <a href="{{ payment|whatsapp_url }}"
+                                    <a href="{% whatsapp_url payment %}"
                                        target="_blank"
                                        class="btn btn-sm btn-success"
                                        title="Enviar enlace por WhatsApp">

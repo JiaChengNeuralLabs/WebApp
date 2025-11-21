@@ -4,11 +4,12 @@ from django.conf import settings
 register = template.Library()
 
 
-@register.filter
-def whatsapp_url(payment):
+@register.simple_tag(takes_context=True)
+def whatsapp_url(context, payment):
     """
-    Template filter para generar la URL de WhatsApp para un pago.
-    Uso: {{ payment|whatsapp_url }}
+    Template tag para generar la URL de WhatsApp para un pago.
+    Uso: {% whatsapp_url payment %}
     """
     phone_number = settings.WHATSAPP_PHONE
-    return payment.get_whatsapp_url(phone_number)
+    request = context.get('request')
+    return payment.get_whatsapp_url(phone_number, request=request)
