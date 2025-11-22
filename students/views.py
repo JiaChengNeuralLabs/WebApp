@@ -1,7 +1,8 @@
 """
 Vistas para Autoescuela Carrasco - Sistema de Gestión de Alumnos
 
-Este archivo contiene 9 vistas principales:
+Este archivo contiene 10 vistas principales:
+0. landing_page - Página principal pública (sin @login_required)
 1. user_login - Login (sin @login_required)
 2. user_logout - Logout
 3. student_list - Lista de alumnos con búsqueda por nombre/DNI/teléfono
@@ -11,8 +12,9 @@ Este archivo contiene 9 vistas principales:
 7. student_delete - Eliminar alumno (con confirmación)
 8. voucher_create - Añadir bono de prácticas al alumno
 9. payment_create - Registrar pago del alumno
+10. upload_receipt - Subir recibo (pública, sin login)
 
-Todas las vistas excepto login/logout requieren autenticación (@login_required).
+Todas las vistas excepto landing_page, login, logout y upload_receipt requieren autenticación (@login_required).
 Los pagos se registran con el usuario que los creó (created_by).
 """
 from django.shortcuts import render, redirect, get_object_or_404
@@ -22,6 +24,15 @@ from django.contrib import messages
 from django.db.models import Q
 from .models import Student, LicenseType, Voucher, Payment, AuditLog
 from .forms import StudentForm, VoucherForm, PaymentForm
+
+
+def landing_page(request):
+    """Vista de la página principal / landing page"""
+    # Si el usuario ya está autenticado, redirigir al panel
+    if request.user.is_authenticated:
+        return redirect('student_list')
+
+    return render(request, 'students/landing_page.html')
 
 
 def user_login(request):

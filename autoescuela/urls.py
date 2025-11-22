@@ -16,14 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
+from students import views as student_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', lambda request: redirect('login')),  # Redirigir raíz al login
-    path('students/', include('students.urls')),
+    path('', student_views.landing_page, name='home'),  # Landing page como página principal
+    path('', include('students.urls')),  # Todas las rutas de students
 ]
 
 # Servir archivos media en desarrollo
