@@ -22,8 +22,8 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from .models import Student, LicenseType, Voucher, Payment, AuditLog
-from .forms import StudentForm, VoucherForm, PaymentForm
+from .models import Student, LicenseType, Voucher, Payment, AuditLog, Vehicle, Maintenance
+from .forms import StudentForm, VoucherForm, PaymentForm, VehicleForm, MaintenanceForm
 
 
 def landing_page(request):
@@ -357,3 +357,152 @@ def upload_receipt(request, token):
         'already_uploaded': already_uploaded,
     }
     return render(request, 'students/upload_receipt.html', context)
+
+
+def can_access_maintenance(user):
+    """Verifica si el usuario puede acceder al módulo de mantenimiento"""
+    # Solo usuarios 'david' o superusuarios pueden acceder
+    return user.username == 'david' or user.is_superuser
+
+
+@login_required
+def vehicle_list(request):
+    """Lista de vehículos"""
+    if not can_access_maintenance(request.user):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('student_list')
+
+    query = request.GET.get('q', '')
+    vehicles = Vehicle.objects.all()
+
+    if query:
+        vehicles = vehicles.filter(
+            Q(license_plate__icontains=query) |
+            Q(brand__icontains=query) |
+            Q(model__icontains=query)
+        )
+
+    context = {
+        'vehicles': vehicles,
+        'query': query,
+    }
+    return render(request, 'students/vehicle_list.html', context)
+
+
+@login_required
+def vehicle_create(request):
+    """Crear nuevo vehículo"""
+    if not can_access_maintenance(request.user):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('student_list')
+
+    if request.method == 'POST':
+        form = VehicleForm(request.POST)
+        if form.is_valid():
+            vehicle = form.save(commit=False)
+            vehicle.created_by = request.user
+            vehicle.save()
+            messages.success(request, f'Vehículo {vehicle.license_plate} creado correctamente')
+            return redirect('vehicle_detail', pk=vehicle.pk)
+    else:
+        form = VehicleForm()
+
+    return render(request, 'students/vehicle_form.html', {'form': form, 'title': 'Nuevo Vehículo'})
+
+
+@login_required
+def vehicle_detail(request, pk):
+    """Detalle del vehículo con historial de mantenimientos"""
+    if not can_access_maintenance(request.user):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('student_list')
+
+    vehicle = get_object_or_404(Vehicle, pk=pk)
+    maintenances = vehicle.maintenances.all()
+
+    context = {
+        'vehicle': vehicle,
+        'maintenances': maintenances,
+    }
+    return render(request, 'students/vehicle_detail.html', context)
+
+
+@login_required
+def vehicle_edit(request, pk):
+    """Editar vehículo existente"""
+    if not can_access_maintenance(request.user):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('student_list')
+
+    vehicle = get_object_or_404(Vehicle, pk=pk)
+
+    if request.method == 'POST':
+        form = VehicleForm(request.POST, instance=vehicle)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Vehículo {vehicle.license_plate} actualizado correctamente')
+            return redirect('vehicle_detail', pk=vehicle.pk)
+    else:
+        form = VehicleForm(instance=vehicle)
+
+    return render(request, 'students/vehicle_form.html', {'form': form, 'title': 'Editar Vehículo', 'vehicle': vehicle})
+
+
+@login_required
+def vehicle_delete(request, pk):
+    """Eliminar vehículo"""
+    if not can_access_maintenance(request.user):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('student_list')
+
+    vehicle = get_object_or_404(Vehicle, pk=pk)
+
+    if request.method == 'POST':
+        license_plate = vehicle.license_plate
+        vehicle.delete()
+        messages.success(request, f'Vehículo {license_plate} eliminado correctamente')
+        return redirect('vehicle_list')
+
+    return render(request, 'students/vehicle_confirm_delete.html', {'vehicle': vehicle})
+
+
+@login_required
+def maintenance_create(request, vehicle_pk):
+    """Añadir mantenimiento a un vehículo"""
+    if not can_access_maintenance(request.user):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('student_list')
+
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_pk)
+
+    if request.method == 'POST':
+        form = MaintenanceForm(request.POST)
+        if form.is_valid():
+            maintenance = form.save(commit=False)
+            maintenance.vehicle = vehicle
+            maintenance.created_by = request.user
+            maintenance.save()
+            messages.success(request, f'Mantenimiento registrado correctamente')
+            return redirect('vehicle_detail', pk=vehicle.pk)
+    else:
+        form = MaintenanceForm()
+
+    return render(request, 'students/maintenance_form.html', {'form': form, 'vehicle': vehicle})
+
+
+@login_required
+def maintenance_delete(request, pk):
+    """Eliminar mantenimiento"""
+    if not can_access_maintenance(request.user):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('student_list')
+
+    maintenance = get_object_or_404(Maintenance, pk=pk)
+    vehicle_pk = maintenance.vehicle.pk
+
+    if request.method == 'POST':
+        maintenance.delete()
+        messages.success(request, 'Mantenimiento eliminado correctamente')
+        return redirect('vehicle_detail', pk=vehicle_pk)
+
+    return render(request, 'students/maintenance_confirm_delete.html', {'maintenance': maintenance})

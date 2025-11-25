@@ -393,3 +393,148 @@ class AuditLog(models.Model):
             description=description,
             ip_address=ip_address
         )
+
+
+class Vehicle(models.Model):
+    """Modelo de Vehículo de la autoescuela"""
+    license_plate = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name="Matrícula"
+    )
+    brand = models.CharField(max_length=50, verbose_name="Marca")
+    model = models.CharField(max_length=50, verbose_name="Modelo")
+    year = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name="Año"
+    )
+    vehicle_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('CAR', 'Coche'),
+            ('MOTORCYCLE', 'Moto'),
+            ('TRUCK', 'Camión'),
+            ('TRAILER', 'Tráiler'),
+        ],
+        default='CAR',
+        verbose_name="Tipo de vehículo"
+    )
+    color = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name="Color"
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Activo")
+    notes = models.TextField(blank=True, verbose_name="Notas")
+    date_added = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha de alta"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vehicles_created',
+        verbose_name="Creado por"
+    )
+
+    class Meta:
+        verbose_name = "Vehículo"
+        verbose_name_plural = "Vehículos"
+        ordering = ['-date_added']
+
+    def __str__(self):
+        return f"{self.license_plate} - {self.brand} {self.model}"
+
+    def get_last_maintenance(self):
+        """Retorna el último mantenimiento registrado"""
+        return self.maintenances.first()
+
+    def get_maintenance_count(self):
+        """Retorna el número total de mantenimientos"""
+        return self.maintenances.count()
+
+
+class Maintenance(models.Model):
+    """Modelo de Mantenimiento de vehículos"""
+    MAINTENANCE_TYPES = [
+        ('OIL_CHANGE', 'Cambio de aceite'),
+        ('TIRE_CHANGE', 'Cambio de neumáticos'),
+        ('BRAKE_CHECK', 'Revisión de frenos'),
+        ('GENERAL_REVIEW', 'Revisión general'),
+        ('ITV', 'ITV'),
+        ('REPAIR', 'Reparación'),
+        ('CLEANING', 'Limpieza'),
+        ('FUEL', 'Combustible'),
+        ('INSURANCE', 'Seguro'),
+        ('OTHER', 'Otros'),
+    ]
+
+    vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.CASCADE,
+        related_name='maintenances',
+        verbose_name="Vehículo"
+    )
+    maintenance_type = models.CharField(
+        max_length=20,
+        choices=MAINTENANCE_TYPES,
+        verbose_name="Tipo de mantenimiento"
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Descripción"
+    )
+    brand = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Marca (repuesto/producto)"
+    )
+    model = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Modelo (repuesto/producto)"
+    )
+    cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Coste"
+    )
+    mileage = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name="Kilometraje"
+    )
+    maintenance_date = models.DateField(
+        default=timezone.now,
+        verbose_name="Fecha de mantenimiento"
+    )
+    next_maintenance_date = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Próximo mantenimiento"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='maintenances_created',
+        verbose_name="Registrado por"
+    )
+    date_created = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha de registro"
+    )
+
+    class Meta:
+        verbose_name = "Mantenimiento"
+        verbose_name_plural = "Mantenimientos"
+        ordering = ['-maintenance_date', '-date_created']
+
+    def __str__(self):
+        return f"{self.get_maintenance_type_display()} - {self.vehicle.license_plate} - {self.maintenance_date}"

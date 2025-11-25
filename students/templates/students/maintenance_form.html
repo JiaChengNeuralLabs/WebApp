@@ -1,0 +1,82 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Registrar Mantenimiento - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-tools me-2"></i>Registrar Mantenimiento</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-car-front me-2"></i>
+                    Vehiculo: <strong>{{ vehicle.license_plate }}</strong> - {{ vehicle.brand }} {{ vehicle.model }}
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_maintenance_type" class="form-label">Tipo de Mantenimiento *</label>
+                            {{ form.maintenance_type }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_maintenance_date" class="form-label">Fecha *</label>
+                            {{ form.maintenance_date }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Descripcion</label>
+                        {{ form.description }}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_brand" class="form-label">Marca (repuesto/producto)</label>
+                            {{ form.brand }}
+                            <small class="text-muted">Opcional - Marca del repuesto o producto usado</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_model" class="form-label">Modelo (repuesto/producto)</label>
+                            {{ form.model }}
+                            <small class="text-muted">Opcional - Modelo del repuesto o producto usado</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="id_cost" class="form-label">Coste (EUR)</label>
+                            {{ form.cost }}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="id_mileage" class="form-label">Kilometraje</label>
+                            {{ form.mileage }}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="id_next_maintenance_date" class="form-label">Proximo Mantenimiento</label>
+                            {{ form.next_maintenance_date }}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i>Registrar Mantenimiento
+                        </button>
+                        <a href="{% url 'vehicle_detail' vehicle.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

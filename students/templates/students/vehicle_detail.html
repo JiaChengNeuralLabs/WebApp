@@ -1,0 +1,183 @@
+{% extends 'students/base.html' %}
+
+{% block title %}{{ vehicle.license_plate }} - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-car-front me-2"></i>{{ vehicle.license_plate }}</h2>
+    <div>
+        <a href="{% url 'vehicle_edit' vehicle.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <a href="{% url 'vehicle_delete' vehicle.pk %}" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i>Eliminar
+        </a>
+    </div>
+</div>
+
+<!-- Informacion del vehiculo -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Datos del Vehiculo</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Matricula:</th>
+                        <td><strong>{{ vehicle.license_plate }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Marca:</th>
+                        <td>{{ vehicle.brand }}</td>
+                    </tr>
+                    <tr>
+                        <th>Modelo:</th>
+                        <td>{{ vehicle.model }}</td>
+                    </tr>
+                    <tr>
+                        <th>Tipo:</th>
+                        <td>{{ vehicle.get_vehicle_type_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>Ano:</th>
+                        <td>{{ vehicle.year|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Color:</th>
+                        <td>{{ vehicle.color|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Estado:</th>
+                        <td>
+                            {% if vehicle.is_active %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Fecha de alta:</th>
+                        <td>{{ vehicle.date_added|date:"d/m/Y" }}</td>
+                    </tr>
+                </table>
+                {% if vehicle.notes %}
+                <div class="mt-3">
+                    <strong>Notas:</strong>
+                    <p class="text-muted">{{ vehicle.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-tools me-2"></i>Resumen de Mantenimientos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h2 class="text-primary">{{ vehicle.get_maintenance_count }}</h2>
+                        <p class="text-muted">Total Mantenimientos</p>
+                    </div>
+                    <div class="col-6">
+                        {% with last=vehicle.get_last_maintenance %}
+                        {% if last %}
+                        <h4 class="text-info">{{ last.maintenance_date|date:"d/m/Y" }}</h4>
+                        <p class="text-muted">Ultimo: {{ last.get_maintenance_type_display }}</p>
+                        {% else %}
+                        <h4 class="text-muted">-</h4>
+                        <p class="text-muted">Sin mantenimientos</p>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+                <hr>
+                <div class="text-center">
+                    <a href="{% url 'maintenance_create' vehicle.pk %}" class="btn btn-success">
+                        <i class="bi bi-plus-circle me-1"></i>Registrar Mantenimiento
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial de mantenimientos -->
+<div class="card">
+    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Mantenimientos</h5>
+        <a href="{% url 'maintenance_create' vehicle.pk %}" class="btn btn-light btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>Nuevo
+        </a>
+    </div>
+    <div class="card-body">
+        {% if maintenances %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Descripcion</th>
+                        <th>Marca/Modelo</th>
+                        <th>Coste</th>
+                        <th>Km</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in maintenances %}
+                    <tr>
+                        <td>{{ m.maintenance_date|date:"d/m/Y" }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ m.get_maintenance_type_display }}</span>
+                        </td>
+                        <td>{{ m.description|default:"-"|truncatewords:10 }}</td>
+                        <td>
+                            {% if m.brand or m.model %}
+                            {{ m.brand }} {{ m.model }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if m.cost %}
+                            <strong>{{ m.cost }} EUR</strong>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{ m.mileage|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'maintenance_delete' m.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-tools display-4 text-muted"></i>
+            <p class="mt-3 text-muted">No hay mantenimientos registrados para este vehiculo</p>
+            <a href="{% url 'maintenance_create' vehicle.pk %}" class="btn btn-success">
+                <i class="bi bi-plus-circle me-1"></i>Registrar primer mantenimiento
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'vehicle_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Volver a Vehiculos
+    </a>
+</div>
+{% endblock %}

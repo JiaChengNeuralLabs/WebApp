@@ -1,0 +1,109 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Vehiculos - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-car-front me-2"></i>Gestion de Vehiculos</h2>
+    <a href="{% url 'vehicle_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Nuevo Vehiculo
+    </a>
+</div>
+
+<!-- Buscador -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por matricula, marca o modelo..." value="{{ query }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de vehiculos -->
+<div class="card">
+    <div class="card-body">
+        {% if vehicles %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Matricula</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Ultimo Mantenimiento</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in vehicles %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'vehicle_detail' vehicle.pk %}" class="text-decoration-none fw-bold">
+                                {{ vehicle.license_plate }}
+                            </a>
+                        </td>
+                        <td>{{ vehicle.brand }}</td>
+                        <td>{{ vehicle.model }}</td>
+                        <td>{{ vehicle.get_vehicle_type_display }}</td>
+                        <td>
+                            {% if vehicle.is_active %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% with last=vehicle.get_last_maintenance %}
+                            {% if last %}
+                            {{ last.maintenance_date|date:"d/m/Y" }} - {{ last.get_maintenance_type_display }}
+                            {% else %}
+                            <span class="text-muted">Sin mantenimientos</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <a href="{% url 'vehicle_detail' vehicle.pk %}" class="btn btn-sm btn-info" title="Ver detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'vehicle_edit' vehicle.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-car-front display-1 text-muted"></i>
+            <p class="mt-3 text-muted">
+                {% if query %}
+                No se encontraron vehiculos con "{{ query }}"
+                {% else %}
+                No hay vehiculos registrados
+                {% endif %}
+            </p>
+            <a href="{% url 'vehicle_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Registrar primer vehiculo
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'student_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Volver al Panel
+    </a>
+</div>
+{% endblock %}

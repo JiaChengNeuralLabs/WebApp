@@ -16,4 +16,13 @@ urlpatterns = [
     path('panel/<int:student_pk>/bono/nuevo/', views.voucher_create, name='voucher_create'),
     path('panel/<int:student_pk>/pago/nuevo/', views.payment_create, name='payment_create'),
     path('panel/historial/', views.audit_log_list, name='audit_log_list'),
+
+    # Gestion de vehiculos y mantenimientos (solo usuario david y superusuarios)
+    path('panel/vehiculos/', views.vehicle_list, name='vehicle_list'),
+    path('panel/vehiculos/nuevo/', views.vehicle_create, name='vehicle_create'),
+    path('panel/vehiculos/<int:pk>/', views.vehicle_detail, name='vehicle_detail'),
+    path('panel/vehiculos/<int:pk>/editar/', views.vehicle_edit, name='vehicle_edit'),
+    path('panel/vehiculos/<int:pk>/eliminar/', views.vehicle_delete, name='vehicle_delete'),
+    path('panel/vehiculos/<int:vehicle_pk>/mantenimiento/nuevo/', views.maintenance_create, name='maintenance_create'),
+    path('panel/mantenimiento/<int:pk>/eliminar/', views.maintenance_delete, name='maintenance_delete'),
 ]

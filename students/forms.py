@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django import forms
-from .models import Student, Voucher, Payment, LicenseType
+from .models import Student, Voucher, Payment, LicenseType, Vehicle, Maintenance
 
 
 class StudentForm(forms.ModelForm):
@@ -62,4 +62,40 @@ class PaymentForm(forms.ModelForm):
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Cantidad pagada'}),
             'payment_method': forms.Select(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Notas adicionales (opcional)'}),
+        }
+
+
+class VehicleForm(forms.ModelForm):
+    """Formulario para crear/editar vehiculos"""
+
+    class Meta:
+        model = Vehicle
+        fields = ['license_plate', 'brand', 'model', 'year', 'vehicle_type', 'color', 'is_active', 'notes']
+        widgets = {
+            'license_plate': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 1234 ABC'}),
+            'brand': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Renault'}),
+            'model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Clio'}),
+            'year': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 2024'}),
+            'vehicle_type': forms.Select(attrs={'class': 'form-control'}),
+            'color': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Blanco'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notas adicionales (opcional)'}),
+        }
+
+
+class MaintenanceForm(forms.ModelForm):
+    """Formulario para registrar mantenimientos"""
+
+    class Meta:
+        model = Maintenance
+        fields = ['maintenance_type', 'description', 'brand', 'model', 'cost', 'mileage', 'maintenance_date', 'next_maintenance_date']
+        widgets = {
+            'maintenance_type': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Descripcion del mantenimiento'}),
+            'brand': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Marca del repuesto (opcional)'}),
+            'model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Modelo del repuesto (opcional)'}),
+            'cost': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Coste en euros'}),
+            'mileage': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Kilometraje actual'}),
+            'maintenance_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'next_maintenance_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
