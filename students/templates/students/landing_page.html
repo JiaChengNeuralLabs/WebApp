@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autoescuela Carrasco - Tu camino hacia la libertad</title>
+    <title>Autoescuela Carrasco - Aprende a conducir con nosotros</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -23,83 +23,115 @@
 
         /* Hero Section */
         .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #00CED1;
             min-height: 100vh;
             position: relative;
             overflow: hidden;
         }
 
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,117.3C1248,117,1344,139,1392,149.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat center bottom;
-            background-size: cover;
-        }
-
+        /* Navbar */
         .navbar {
-            padding: 1.5rem 0;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            padding: 1.2rem 0;
+            background: transparent;
         }
 
         .navbar-brand {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: white !important;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
+        .navbar-nav .nav-link {
+            color: #004d4d !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-left: 1.5rem;
+            transition: color 0.3s;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: white !important;
+        }
+
+        .navbar-toggler {
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        /* Hero Content */
         .hero-content {
-            min-height: calc(100vh - 100px);
+            min-height: calc(100vh - 80px);
             display: flex;
             align-items: center;
             position: relative;
             z-index: 1;
+            padding: 2rem 0;
         }
 
         .hero-title {
             font-size: 4rem;
             font-weight: 800;
             color: white;
-            margin-bottom: 1.5rem;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
-            animation: fadeInUp 1s ease;
-        }
-
-        .hero-subtitle {
-            font-size: 1.5rem;
-            color: rgba(255,255,255,0.95);
+            line-height: 1.1;
             margin-bottom: 2rem;
-            font-weight: 300;
-            animation: fadeInUp 1.2s ease;
+            text-transform: uppercase;
+            animation: fadeInLeft 1s ease;
         }
 
-        .btn-hero {
-            padding: 1rem 3rem;
-            font-size: 1.2rem;
+        .btn-info-custom {
+            padding: 0.9rem 2.5rem;
+            font-size: 1rem;
             font-weight: 600;
             border-radius: 50px;
             border: none;
-            background: white;
-            color: #667eea;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: #b2f5f5;
+            color: #004d4d;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
             transition: all 0.3s;
-            animation: fadeInUp 1.4s ease;
+            animation: fadeInLeft 1.2s ease;
+            text-decoration: none;
+            display: inline-block;
         }
 
-        .btn-hero:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-            background: #f8f9fa;
-            color: #5568d3;
+        .btn-info-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            background: white;
+            color: #004d4d;
         }
 
-        .hero-image {
-            animation: float 3s ease-in-out infinite;
+        .hero-car {
+            max-width: 100%;
+            height: auto;
+            animation: fadeInRight 1s ease;
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.2));
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         @keyframes fadeInUp {
@@ -113,44 +145,81 @@
             }
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        /* Features Section */
-        .features {
-            padding: 6rem 0;
+        /* Vehicles Section */
+        .vehicles {
+            padding: 5rem 0;
             background: #f8f9fa;
         }
 
         .section-title {
             font-size: 2.5rem;
-            font-weight: 700;
+            font-weight: 800;
             text-align: center;
+            margin-bottom: 1rem;
+            color: #004d4d;
+            text-transform: uppercase;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: #666;
             margin-bottom: 3rem;
-            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .vehicle-card {
+            background: #b2f5f5;
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s;
+            height: 100%;
+        }
+
+        .vehicle-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,206,209,0.3);
+        }
+
+        .vehicle-icon {
+            font-size: 5rem;
+            color: #004d4d;
+            margin-bottom: 1rem;
+        }
+
+        .vehicle-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #004d4d;
+            text-transform: uppercase;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 5rem 0;
+            background: white;
         }
 
         .feature-card {
             background: white;
             padding: 2.5rem;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             transition: all 0.3s;
             height: 100%;
-            border: none;
+            border: 2px solid transparent;
         }
 
         .feature-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            border-color: #00CED1;
+            box-shadow: 0 20px 40px rgba(0,206,209,0.2);
         }
 
         .feature-icon {
             width: 80px;
             height: 80px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #00CED1;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -161,79 +230,114 @@
         }
 
         .feature-title {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 600;
             margin-bottom: 1rem;
-            color: #2d3748;
+            color: #004d4d;
+            text-align: center;
         }
 
         .feature-description {
-            color: #718096;
+            color: #666;
             line-height: 1.8;
+            text-align: center;
         }
 
         /* Stats Section */
         .stats {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 5rem 0;
+            background: #00CED1;
+            padding: 4rem 0;
             color: white;
         }
 
         .stat-box {
             text-align: center;
-            padding: 2rem;
+            padding: 1.5rem;
         }
 
         .stat-number {
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-weight: 800;
             display: block;
             margin-bottom: 0.5rem;
         }
 
         .stat-label {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* CTA Section */
-        .cta {
-            padding: 6rem 0;
+        /* Contact Section */
+        .contact {
+            padding: 5rem 0;
+            background: #f8f9fa;
+        }
+
+        .contact-box {
             background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
 
-        .cta-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 4rem;
-            border-radius: 30px;
-            text-align: center;
-            color: white;
-            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
-        }
-
-        .cta-title {
-            font-size: 2.5rem;
-            font-weight: 700;
+        .contact-info {
             margin-bottom: 1.5rem;
         }
 
-        .cta-text {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.95;
+        .contact-info i {
+            color: #00CED1;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        .contact-info span {
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .btn-contact {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            border: none;
+            background: #00CED1;
+            color: white;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-contact:hover {
+            background: #00b3b3;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,206,209,0.4);
+            color: white;
+        }
+
+        .btn-whatsapp {
+            background: #25D366;
+        }
+
+        .btn-whatsapp:hover {
+            background: #1da851;
+            box-shadow: 0 10px 30px rgba(37,211,102,0.4);
         }
 
         /* Footer */
         .footer {
-            background: #2d3748;
+            background: #004d4d;
             color: white;
             padding: 3rem 0 1.5rem;
         }
 
         .footer-title {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: 600;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            color: #00CED1;
         }
 
         .footer-links {
@@ -242,7 +346,7 @@
         }
 
         .footer-links li {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.7rem;
         }
 
         .footer-links a {
@@ -252,12 +356,16 @@
         }
 
         .footer-links a:hover {
-            color: white;
+            color: #00CED1;
+        }
+
+        .footer-text {
+            color: rgba(255,255,255,0.7);
         }
 
         .social-icons a {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             background: rgba(255,255,255,0.1);
             border-radius: 50%;
             display: inline-flex;
@@ -267,23 +375,49 @@
             color: white;
             text-decoration: none;
             transition: all 0.3s;
+            font-size: 1.2rem;
         }
 
         .social-icons a:hover {
-            background: white;
-            color: #667eea;
+            background: #00CED1;
+            color: white;
+            transform: translateY(-3px);
         }
 
         /* Responsive */
+        @media (max-width: 991px) {
+            .hero-title {
+                font-size: 2.8rem;
+                text-align: center;
+            }
+            .hero-content .row {
+                flex-direction: column-reverse;
+            }
+            .hero-car {
+                max-width: 80%;
+                margin: 0 auto 2rem;
+                display: block;
+            }
+            .btn-info-custom {
+                display: block;
+                text-align: center;
+                margin: 0 auto;
+            }
+        }
+
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 2.5rem;
+                font-size: 2.2rem;
             }
-            .hero-subtitle {
-                font-size: 1.2rem;
+            .section-title {
+                font-size: 1.8rem;
             }
             .stat-number {
                 font-size: 2.5rem;
+            }
+            .navbar-nav .nav-link {
+                margin-left: 0;
+                padding: 0.5rem 0;
             }
         }
 
@@ -298,35 +432,78 @@
             opacity: 1;
             transform: translateY(0);
         }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
 <body>
     <!-- Hero Section -->
-    <section class="hero">
-        <nav class="navbar">
+    <section class="hero" id="inicio">
+        <nav class="navbar navbar-expand-lg">
             <div class="container">
-                <a class="navbar-brand" href="#">
-                    <i class="bi bi-car-front-fill"></i> Autoescuela Carrasco
+                <a class="navbar-brand" href="#inicio">
+                    Autoescuela<br>Carrasco
                 </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#inicio">INICIO</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#vehiculos">COCHES</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#permisos">PERMISOS</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#contacto">CONTACTO</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </nav>
 
         <div class="hero-content">
             <div class="container">
                 <div class="row align-items-center">
-                    <div class="col-lg-6">
-                        <h1 class="hero-title">Tu camino hacia la libertad comienza aquí</h1>
-                        <p class="hero-subtitle">
-                            Más de 20 años formando conductores responsables y seguros.
-                            Aprende a conducir con los mejores profesionales.
-                        </p>
-                        <a href="{% url 'login' %}" class="btn btn-hero">
-                            <i class="bi bi-box-arrow-in-right me-2"></i>Acceso Sistema de Gestión
+                    <div class="col-lg-5">
+                        <h1 class="hero-title">Aprende a<br>conducir<br>con<br>nosotros</h1>
+                        <a href="#contacto" class="btn-info-custom">
+                            MAS INFORMACION
                         </a>
                     </div>
-                    <div class="col-lg-6 text-center hero-image">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 24 24" fill="white" opacity="0.9">
-                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                    <div class="col-lg-7 text-center">
+                        <!-- Car SVG Illustration -->
+                        <svg class="hero-car" viewBox="0 0 500 250" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Car body -->
+                            <path d="M50,180 L70,180 L90,130 L180,110 L280,110 L380,130 L420,180 L450,180 L450,200 L420,200 L420,190 C420,185 415,180 410,180 L90,180 C85,180 80,185 80,190 L80,200 L50,200 Z" fill="#40E0D0" stroke="#008B8B" stroke-width="2"/>
+                            <!-- Windows -->
+                            <path d="M100,130 L175,115 L175,170 L100,170 Z" fill="#B0E0E6" stroke="#008B8B" stroke-width="2"/>
+                            <path d="M185,115 L270,115 L270,170 L185,170 Z" fill="#B0E0E6" stroke="#008B8B" stroke-width="2"/>
+                            <path d="M280,118 L360,135 L360,170 L280,170 Z" fill="#B0E0E6" stroke="#008B8B" stroke-width="2"/>
+                            <!-- Wheels -->
+                            <circle cx="120" cy="200" r="35" fill="#333" stroke="#222" stroke-width="3"/>
+                            <circle cx="120" cy="200" r="20" fill="#666"/>
+                            <circle cx="120" cy="200" r="8" fill="#333"/>
+                            <circle cx="380" cy="200" r="35" fill="#333" stroke="#222" stroke-width="3"/>
+                            <circle cx="380" cy="200" r="20" fill="#666"/>
+                            <circle cx="380" cy="200" r="8" fill="#333"/>
+                            <!-- Headlights -->
+                            <ellipse cx="440" cy="165" rx="8" ry="12" fill="#FFD700"/>
+                            <ellipse cx="60" cy="165" rx="6" ry="10" fill="#FF4444"/>
+                            <!-- Door handle -->
+                            <rect x="200" y="145" width="25" height="5" rx="2" fill="#008B8B"/>
+                            <!-- Mirror -->
+                            <ellipse cx="95" cy="125" rx="8" ry="5" fill="#40E0D0" stroke="#008B8B" stroke-width="1"/>
+                            <!-- License plate text -->
+                            <rect x="230" y="175" width="50" height="15" rx="2" fill="white" stroke="#008B8B"/>
+                            <text x="255" y="186" font-family="Arial" font-size="8" fill="#008B8B" text-anchor="middle">CLIO</text>
                         </svg>
                     </div>
                 </div>
@@ -334,44 +511,72 @@
         </div>
     </section>
 
-    <!-- Features Section -->
-    <section class="features">
+    <!-- Vehicles Section -->
+    <section class="vehicles" id="vehiculos">
         <div class="container">
-            <h2 class="section-title fade-in">¿Por qué elegir Autoescuela Carrasco?</h2>
+            <h2 class="section-title fade-in">Nuestros Vehiculos</h2>
+            <p class="section-subtitle fade-in">Todos nuestros coches son Renault Clio nuevo de ultimo modelo.</p>
             <div class="row g-4">
                 <div class="col-md-4">
-                    <div class="card feature-card fade-in">
+                    <div class="vehicle-card fade-in">
+                        <i class="bi bi-car-front-fill vehicle-icon"></i>
+                        <h3 class="vehicle-title">Coches</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="vehicle-card fade-in">
+                        <i class="bi bi-bicycle vehicle-icon"></i>
+                        <h3 class="vehicle-title">Motos</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="vehicle-card fade-in">
+                        <i class="bi bi-truck vehicle-icon"></i>
+                        <h3 class="vehicle-title">Camiones<br>y Trailer</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="permisos">
+        <div class="container">
+            <h2 class="section-title fade-in" style="margin-bottom: 3rem;">Tipos de Permisos</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card fade-in">
                         <div class="feature-icon">
-                            <i class="bi bi-award"></i>
+                            <i class="bi bi-car-front"></i>
                         </div>
-                        <h3 class="feature-title text-center">Profesionales Certificados</h3>
-                        <p class="feature-description text-center">
-                            Nuestros instructores cuentan con más de 20 años de experiencia
-                            y están altamente cualificados para enseñarte a conducir de forma segura.
+                        <h3 class="feature-title">Permiso B</h3>
+                        <p class="feature-description">
+                            Carnet de coche. Conduce vehiculos de hasta 3.500 kg
+                            y hasta 9 plazas incluido el conductor.
                         </p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card feature-card fade-in">
+                    <div class="feature-card fade-in">
                         <div class="feature-icon">
-                            <i class="bi bi-calendar-check"></i>
+                            <i class="bi bi-scooter"></i>
                         </div>
-                        <h3 class="feature-title text-center">Horarios Flexibles</h3>
-                        <p class="feature-description text-center">
-                            Adaptamos nuestros horarios a tus necesidades. Clases de mañana,
-                            tarde y fines de semana disponibles.
+                        <h3 class="feature-title">Permiso A1, A2, A</h3>
+                        <p class="feature-description">
+                            Carnet de moto. Desde ciclomotores hasta motocicletas
+                            sin limite de potencia segun categoria.
                         </p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card feature-card fade-in">
+                    <div class="feature-card fade-in">
                         <div class="feature-icon">
-                            <i class="bi bi-speedometer2"></i>
+                            <i class="bi bi-truck"></i>
                         </div>
-                        <h3 class="feature-title text-center">Alta Tasa de Aprobados</h3>
-                        <p class="feature-description text-center">
-                            El 95% de nuestros alumnos aprueban a la primera.
-                            Metodología probada y efectiva para tu éxito.
+                        <h3 class="feature-title">Permiso C, C+E</h3>
+                        <p class="feature-description">
+                            Carnet de camion y trailer. Para vehiculos de mas
+                            de 3.500 kg con o sin remolque.
                         </p>
                     </div>
                 </div>
@@ -386,7 +591,7 @@
                 <div class="col-md-3 col-6">
                     <div class="stat-box fade-in">
                         <span class="stat-number">20+</span>
-                        <span class="stat-label">Años de Experiencia</span>
+                        <span class="stat-label">Anos Experiencia</span>
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
@@ -398,32 +603,58 @@
                 <div class="col-md-3 col-6">
                     <div class="stat-box fade-in">
                         <span class="stat-number">95%</span>
-                        <span class="stat-label">Tasa de Aprobados</span>
+                        <span class="stat-label">Tasa Aprobados</span>
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
                     <div class="stat-box fade-in">
                         <span class="stat-number">100%</span>
-                        <span class="stat-label">Satisfacción</span>
+                        <span class="stat-label">Satisfaccion</span>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="cta">
+    <!-- Contact Section -->
+    <section class="contact" id="contacto">
         <div class="container">
-            <div class="cta-box fade-in">
-                <h2 class="cta-title">¿Listo para obtener tu carnet?</h2>
-                <p class="cta-text">Comienza tu aventura hacia la libertad. Contáctanos hoy mismo.</p>
-                <div class="d-flex gap-3 justify-content-center flex-wrap">
-                    <a href="tel:+34612345678" class="btn btn-hero">
-                        <i class="bi bi-telephone-fill me-2"></i>Llámanos
-                    </a>
-                    <a href="https://wa.me/34612345678" target="_blank" class="btn btn-hero">
-                        <i class="bi bi-whatsapp me-2"></i>WhatsApp
-                    </a>
+            <h2 class="section-title fade-in" style="margin-bottom: 3rem;">Contacto</h2>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="contact-box fade-in">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="contact-info">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    <span>Calle Principal, 123<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ciudad, CP 12345</span>
+                                </div>
+                                <div class="contact-info">
+                                    <i class="bi bi-telephone-fill"></i>
+                                    <span>+34 612 345 678</span>
+                                </div>
+                                <div class="contact-info">
+                                    <i class="bi bi-envelope-fill"></i>
+                                    <span>info@autoescuelacarrasco.es</span>
+                                </div>
+                                <div class="contact-info">
+                                    <i class="bi bi-clock-fill"></i>
+                                    <span>Lun - Vie: 9:00 - 20:00<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sab: 9:00 - 14:00</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex flex-column justify-content-center align-items-center gap-3 mt-4 mt-md-0">
+                                <a href="tel:+34612345678" class="btn-contact w-100 text-center">
+                                    <i class="bi bi-telephone-fill me-2"></i>Llamanos
+                                </a>
+                                <a href="https://wa.me/34612345678" target="_blank" class="btn-contact btn-whatsapp w-100 text-center">
+                                    <i class="bi bi-whatsapp me-2"></i>WhatsApp
+                                </a>
+                                <a href="{% url 'login' %}" class="btn-contact w-100 text-center" style="background: #004d4d;">
+                                    <i class="bi bi-lock-fill me-2"></i>Area Privada
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -434,41 +665,42 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-4">
-                    <h5 class="footer-title">
-                        <i class="bi bi-car-front-fill me-2"></i>Autoescuela Carrasco
-                    </h5>
-                    <p class="text-white-50">
-                        Formando conductores responsables desde hace más de 20 años.
+                    <h5 class="footer-title">Autoescuela Carrasco</h5>
+                    <p class="footer-text">
+                        Formando conductores responsables desde hace mas de 20 anos.
                         Tu seguridad es nuestra prioridad.
                     </p>
                     <div class="social-icons mt-3">
                         <a href="#"><i class="bi bi-facebook"></i></a>
                         <a href="#"><i class="bi bi-instagram"></i></a>
-                        <a href="#"><i class="bi bi-twitter"></i></a>
+                        <a href="#"><i class="bi bi-tiktok"></i></a>
                         <a href="#"><i class="bi bi-youtube"></i></a>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <h5 class="footer-title">Contacto</h5>
+                    <h5 class="footer-title">Enlaces</h5>
                     <ul class="footer-links">
-                        <li><i class="bi bi-geo-alt me-2"></i>Calle Principal, 123</li>
-                        <li><i class="bi bi-telephone me-2"></i>+34 612 345 678</li>
-                        <li><i class="bi bi-envelope me-2"></i>info@autoescuelacarrasco.es</li>
-                        <li><i class="bi bi-clock me-2"></i>Lun-Vie: 9:00 - 20:00</li>
+                        <li><a href="#inicio">Inicio</a></li>
+                        <li><a href="#vehiculos">Vehiculos</a></li>
+                        <li><a href="#permisos">Permisos</a></li>
+                        <li><a href="#contacto">Contacto</a></li>
+                        <li><a href="{% url 'login' %}">Area Privada</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <h5 class="footer-title">Enlaces Rápidos</h5>
+                    <h5 class="footer-title">Horario</h5>
                     <ul class="footer-links">
-                        <li><a href="#">Inicio</a></li>
-                        <li><a href="#">Servicios</a></li>
-                        <li><a href="#">Precios</a></li>
-                        <li><a href="{% url 'login' %}">Área Privada</a></li>
+                        <li>Lunes - Viernes</li>
+                        <li class="footer-text">9:00 - 14:00 / 16:00 - 20:00</li>
+                        <li class="mt-2">Sabados</li>
+                        <li class="footer-text">9:00 - 14:00</li>
+                        <li class="mt-2">Domingos</li>
+                        <li class="footer-text">Cerrado</li>
                     </ul>
                 </div>
             </div>
-            <hr style="border-color: rgba(255,255,255,0.1);">
-            <div class="text-center text-white-50 mt-3">
+            <hr style="border-color: rgba(255,255,255,0.2);">
+            <div class="text-center footer-text mt-3">
                 <p>&copy; 2025 Autoescuela Carrasco. Todos los derechos reservados.</p>
             </div>
         </div>
@@ -479,7 +711,7 @@
         // Scroll Animation
         const observerOptions = {
             threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
+            rootMargin: '0px 0px -50px 0px'
         };
 
         const observer = new IntersectionObserver(function(entries) {
@@ -492,6 +724,18 @@
 
         document.querySelectorAll('.fade-in').forEach(el => {
             observer.observe(el);
+        });
+
+        // Navbar background on scroll
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(0, 206, 209, 0.95)';
+                navbar.style.backdropFilter = 'blur(10px)';
+            } else {
+                navbar.style.background = 'transparent';
+                navbar.style.backdropFilter = 'none';
+            }
         });
     </script>
 </body>
