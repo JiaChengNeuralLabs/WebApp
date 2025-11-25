@@ -1,0 +1,61 @@
+{% extends 'students/base.html' %}
+
+{% block title %}{% if editing %}Editar{% else %}Registrar{% endif %} Práctica - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-stopwatch me-2"></i>{% if editing %}Editar{% else %}Registrar{% endif %} Práctica</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-person me-2"></i>
+                    Alumno: <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                </div>
+
+                {% if unbilled_minutes > 0 %}
+                <div class="alert {% if unbilled_minutes >= 450 %}alert-success{% else %}alert-warning{% endif %}">
+                    <i class="bi bi-clock me-2"></i>
+                    Minutos pendientes de facturar: <strong>{{ unbilled_minutes }}'</strong>
+                    {% if unbilled_minutes >= 450 %}
+                    <br><small>Ya puedes convertir a bono (450' = 1 bono)</small>
+                    {% else %}
+                    <br><small>Faltan {{ 450|add:unbilled_minutes|stringformat:"d" }} minutos para el bono</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="id_duration" class="form-label">Duración de la práctica *</label>
+                        {{ form.duration }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_practice_date" class="form-label">Fecha de la práctica *</label>
+                        {{ form.practice_date }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_notes" class="form-label">Notas</label>
+                        {{ form.notes }}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>{% if editing %}Guardar Cambios{% else %}Registrar Práctica{% endif %}
+                        </button>
+                        <a href="{% url 'student_detail' student.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -538,3 +538,84 @@ class Maintenance(models.Model):
 
     def __str__(self):
         return f"{self.get_maintenance_type_display()} - {self.vehicle.license_plate} - {self.maintenance_date}"
+
+
+class Practice(models.Model):
+    """Modelo de Práctica - Registro individual de cada clase práctica"""
+    DURATION_CHOICES = [
+        (90, 'Práctica 90 minutos'),
+        (60, 'Práctica 60 minutos'),
+        (45, 'Práctica 45 minutos'),
+        (30, 'Práctica 30 minutos'),
+    ]
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name='practices',
+        verbose_name="Alumno"
+    )
+    duration = models.PositiveIntegerField(
+        choices=DURATION_CHOICES,
+        default=90,
+        verbose_name="Duración (minutos)"
+    )
+    practice_date = models.DateField(
+        default=timezone.now,
+        verbose_name="Fecha de la práctica"
+    )
+    notes = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Notas"
+    )
+    is_billed = models.BooleanField(
+        default=False,
+        verbose_name="Facturada en bono"
+    )
+    billed_voucher = models.ForeignKey(
+        Voucher,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='practices_included',
+        verbose_name="Bono asociado"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='practices_created',
+        verbose_name="Registrado por"
+    )
+    date_created = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha de registro"
+    )
+
+    class Meta:
+        verbose_name = "Práctica"
+        verbose_name_plural = "Prácticas"
+        ordering = ['-practice_date', '-date_created']
+
+    def __str__(self):
+        return f"{self.student} - {self.duration}' - {self.practice_date}"
+
+    @staticmethod
+    def get_unbilled_minutes(student):
+        """Retorna el total de minutos no facturados del alumno"""
+        from django.db.models import Sum
+        result = Practice.objects.filter(
+            student=student,
+            is_billed=False
+        ).aggregate(total=Sum('duration'))
+        return result['total'] or 0
+
+    @staticmethod
+    def get_unbilled_practices(student):
+        """Retorna las prácticas no facturadas del alumno"""
+        return Practice.objects.filter(
+            student=student,
+            is_billed=False
+        ).order_by('practice_date')

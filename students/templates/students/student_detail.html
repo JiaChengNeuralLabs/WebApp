@@ -182,4 +182,84 @@
         </div>
     </div>
 </div>
+
+<!-- Sección de Prácticas -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-stopwatch"></i> Prácticas ({{ practices.count }})</span>
+                <div>
+                    {% if unbilled_minutes >= 450 %}
+                    <a href="{% url 'convert_to_bonus' student.pk %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-gift"></i> Convertir a Bono ({{ unbilled_minutes }}')
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'practice_create' student.pk %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Registrar Práctica
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if unbilled_minutes > 0 %}
+                <div class="alert {% if unbilled_minutes >= 450 %}alert-success{% else %}alert-info{% endif %} py-2">
+                    <i class="bi bi-clock me-2"></i>
+                    <strong>{{ unbilled_minutes }} minutos</strong> pendientes de facturar
+                    {% if unbilled_minutes >= 450 %}
+                    - <strong>¡Listo para convertir a bono!</strong>
+                    {% else %}
+                    - Faltan <strong>{{ minutes_for_bonus }} minutos</strong> para el bono (450')
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if practices %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Duración</th>
+                                <th>Notas</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for practice in practices %}
+                            <tr class="{% if practice.is_billed %}table-secondary{% endif %}">
+                                <td>{{ practice.practice_date|date:"d/m/Y" }}</td>
+                                <td><strong>{{ practice.duration }}'</strong></td>
+                                <td>{{ practice.notes|default:"-" }}</td>
+                                <td>
+                                    {% if practice.is_billed %}
+                                        <span class="badge bg-secondary"><i class="bi bi-check-circle"></i> Facturada</span>
+                                    {% else %}
+                                        <span class="badge bg-warning"><i class="bi bi-clock"></i> Pendiente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not practice.is_billed %}
+                                    <a href="{% url 'practice_edit' practice.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'practice_delete' practice.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">No hay prácticas registradas</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

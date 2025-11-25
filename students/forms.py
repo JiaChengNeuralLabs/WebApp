@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django import forms
-from .models import Student, Voucher, Payment, LicenseType, Vehicle, Maintenance
+from .models import Student, Voucher, Payment, LicenseType, Vehicle, Maintenance, Practice
 
 
 class StudentForm(forms.ModelForm):
@@ -98,4 +98,17 @@ class MaintenanceForm(forms.ModelForm):
             'mileage': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Kilometraje actual'}),
             'maintenance_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'next_maintenance_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+
+class PracticeForm(forms.ModelForm):
+    """Formulario para registrar practicas"""
+
+    class Meta:
+        model = Practice
+        fields = ['duration', 'practice_date', 'notes']
+        widgets = {
+            'duration': forms.Select(attrs={'class': 'form-control'}),
+            'practice_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'notes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Notas (opcional)'}),
         }

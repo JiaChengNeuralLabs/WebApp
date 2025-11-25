@@ -1,0 +1,86 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Convertir a Bono - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-gift me-2"></i>Convertir Prácticas a Bono</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-person me-2"></i>
+                    Alumno: <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                </div>
+
+                {% if unbilled_minutes >= 450 %}
+                <div class="alert alert-success">
+                    <h5><i class="bi bi-check-circle me-2"></i>¡Listo para convertir!</h5>
+                    <p class="mb-0">
+                        El alumno tiene <strong>{{ unbilled_minutes }} minutos</strong> pendientes de facturar.<br>
+                        Se creará un <strong>Bono 5 Prácticas 90'</strong> por <strong>{{ bonus_price }}€</strong>
+                    </p>
+                </div>
+
+                <h5 class="mt-4">Prácticas que se incluirán en el bono:</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Duración</th>
+                                <th>Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for practice in unbilled_practices %}
+                            <tr>
+                                <td>{{ practice.practice_date|date:"d/m/Y" }}</td>
+                                <td>{{ practice.duration }}'</td>
+                                <td>{{ practice.notes|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <th>Total</th>
+                                <th>{{ unbilled_minutes }}'</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-gift me-2"></i>Confirmar y Crear Bono ({{ bonus_price }}€)
+                        </button>
+                        <a href="{% url 'student_detail' student.pk %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+
+                {% else %}
+                <div class="alert alert-warning">
+                    <h5><i class="bi bi-exclamation-triangle me-2"></i>Minutos insuficientes</h5>
+                    <p class="mb-0">
+                        El alumno tiene <strong>{{ unbilled_minutes }} minutos</strong> pendientes.<br>
+                        Se necesitan al menos <strong>450 minutos</strong> para crear un bono.<br>
+                        Faltan <strong>{{ 450|add:"-unbilled_minutes" }} minutos</strong>.
+                    </p>
+                </div>
+
+                <a href="{% url 'student_detail' student.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Volver al alumno
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

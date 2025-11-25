@@ -22,8 +22,8 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from .models import Student, LicenseType, Voucher, Payment, AuditLog, Vehicle, Maintenance
-from .forms import StudentForm, VoucherForm, PaymentForm, VehicleForm, MaintenanceForm
+from .models import Student, LicenseType, Voucher, Payment, AuditLog, Vehicle, Maintenance, Practice
+from .forms import StudentForm, VoucherForm, PaymentForm, VehicleForm, MaintenanceForm, PracticeForm
 
 
 def landing_page(request):
@@ -137,11 +137,19 @@ def student_detail(request, pk):
     student = get_object_or_404(Student, pk=pk)
     vouchers = student.vouchers.all()
     payments = student.payments.all()
+    practices = student.practices.all().order_by('-practice_date')
+
+    # Calcular minutos de prácticas pendientes de facturar
+    unbilled_minutes = Practice.get_unbilled_minutes(student)
+    minutes_for_bonus = max(0, 450 - unbilled_minutes)
 
     context = {
         'student': student,
         'vouchers': vouchers,
         'payments': payments,
+        'practices': practices,
+        'unbilled_minutes': unbilled_minutes,
+        'minutes_for_bonus': minutes_for_bonus,
         'total_debt': student.get_total_debt(),
         'total_paid': student.get_total_paid(),
         'balance': student.get_balance(),
@@ -533,3 +541,154 @@ def maintenance_delete(request, pk):
         return redirect('vehicle_detail', pk=vehicle_pk)
 
     return render(request, 'students/maintenance_confirm_delete.html', {'maintenance': maintenance})
+
+
+# ==================== PRÁCTICAS ====================
+
+@login_required
+def practice_create(request, student_pk):
+    """Registrar una nueva práctica para un alumno"""
+    student = get_object_or_404(Student, pk=student_pk)
+
+    if request.method == 'POST':
+        form = PracticeForm(request.POST)
+        if form.is_valid():
+            practice = form.save(commit=False)
+            practice.student = student
+            practice.created_by = request.user
+            practice.save()
+            messages.success(request, f'Práctica de {practice.duration} minutos registrada correctamente')
+            return redirect('student_detail', pk=student.pk)
+    else:
+        form = PracticeForm()
+
+    # Calcular minutos pendientes
+    unbilled_minutes = Practice.get_unbilled_minutes(student)
+
+    return render(request, 'students/practice_form.html', {
+        'form': form,
+        'student': student,
+        'unbilled_minutes': unbilled_minutes
+    })
+
+
+@login_required
+def practice_edit(request, pk):
+    """Editar una práctica existente"""
+    practice = get_object_or_404(Practice, pk=pk)
+    student = practice.student
+
+    if practice.is_billed:
+        messages.error(request, 'No se puede editar una práctica que ya ha sido facturada en un bono.')
+        return redirect('student_detail', pk=student.pk)
+
+    if request.method == 'POST':
+        form = PracticeForm(request.POST, instance=practice)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Práctica actualizada correctamente')
+            return redirect('student_detail', pk=student.pk)
+    else:
+        form = PracticeForm(instance=practice)
+
+    unbilled_minutes = Practice.get_unbilled_minutes(student)
+
+    return render(request, 'students/practice_form.html', {
+        'form': form,
+        'student': student,
+        'unbilled_minutes': unbilled_minutes,
+        'editing': True,
+        'practice': practice
+    })
+
+
+@login_required
+def practice_delete(request, pk):
+    """Eliminar una práctica"""
+    practice = get_object_or_404(Practice, pk=pk)
+    student_pk = practice.student.pk
+
+    if practice.is_billed:
+        messages.error(request, 'No se puede eliminar una práctica que ya ha sido facturada en un bono.')
+        return redirect('student_detail', pk=student_pk)
+
+    if request.method == 'POST':
+        practice.delete()
+        messages.success(request, 'Práctica eliminada correctamente')
+        return redirect('student_detail', pk=student_pk)
+
+    return render(request, 'students/practice_confirm_delete.html', {'practice': practice})
+
+
+@login_required
+def convert_to_bonus(request, student_pk):
+    """Convertir prácticas pendientes a bono (450 minutos = 1 bono)"""
+    student = get_object_or_404(Student, pk=student_pk)
+
+    if request.method == 'POST':
+        unbilled_minutes = Practice.get_unbilled_minutes(student)
+
+        if unbilled_minutes < 450:
+            messages.error(request, f'Se necesitan al menos 450 minutos para convertir a bono. Actualmente hay {unbilled_minutes} minutos.')
+            return redirect('student_detail', pk=student.pk)
+
+        # Obtener prácticas no facturadas ordenadas por fecha
+        unbilled_practices = Practice.get_unbilled_practices(student)
+
+        # Seleccionar prácticas hasta llegar a 450 minutos
+        minutes_to_bill = 0
+        practices_to_bill = []
+
+        for practice in unbilled_practices:
+            if minutes_to_bill + practice.duration <= 450:
+                practices_to_bill.append(practice)
+                minutes_to_bill += practice.duration
+            elif minutes_to_bill < 450:
+                # Incluir esta práctica aunque supere los 450
+                practices_to_bill.append(practice)
+                minutes_to_bill += practice.duration
+                break
+
+        if minutes_to_bill < 450:
+            messages.error(request, 'No hay suficientes prácticas para completar un bono.')
+            return redirect('student_detail', pk=student.pk)
+
+        # Crear el cargo del bono
+        voucher = Voucher.objects.create(
+            student=student,
+            concept_type='BONUS_5_PRACTICES',
+            amount=Voucher.CONCEPT_PRICES['BONUS_5_PRACTICES'],
+            description=f'Bono generado automáticamente ({minutes_to_bill} minutos)',
+            created_by=request.user
+        )
+
+        # Marcar las prácticas como facturadas
+        for practice in practices_to_bill:
+            practice.is_billed = True
+            practice.billed_voucher = voucher
+            practice.save()
+
+        # Registrar en auditoría
+        AuditLog.log_action(
+            user=request.user,
+            action='CREATE',
+            entity_type='VOUCHER',
+            entity_id=voucher.id,
+            entity_name=f'Bono 5 Prácticas - {student}',
+            description=f'Bono creado automáticamente: {len(practices_to_bill)} prácticas ({minutes_to_bill} min) convertidas a bono de {voucher.amount}€',
+            request=request
+        )
+
+        messages.success(request, f'Bono creado correctamente. {len(practices_to_bill)} prácticas ({minutes_to_bill} minutos) han sido facturadas.')
+        return redirect('student_detail', pk=student.pk)
+
+    # Si es GET, mostrar confirmación
+    unbilled_minutes = Practice.get_unbilled_minutes(student)
+    unbilled_practices = Practice.get_unbilled_practices(student)
+
+    return render(request, 'students/convert_to_bonus.html', {
+        'student': student,
+        'unbilled_minutes': unbilled_minutes,
+        'unbilled_practices': unbilled_practices,
+        'bonus_price': Voucher.CONCEPT_PRICES['BONUS_5_PRACTICES']
+    })
