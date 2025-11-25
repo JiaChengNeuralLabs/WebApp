@@ -15,3 +15,6 @@ python manage.py generate_payment_tokens
 
 # Crear superusuario por defecto si no existe
 python manage.py createdefaultsu
+
+# Crear usuario david para gestion de mantenimiento
+python manage.py createdavid
