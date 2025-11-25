@@ -172,6 +172,9 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'student_list'
 LOGOUT_REDIRECT_URL = 'login'
 
+# Session settings - La sesion expira al cerrar el navegador
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 # Security settings for production
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
