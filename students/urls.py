@@ -24,5 +24,6 @@ urlpatterns = [
     path('panel/vehiculos/<int:pk>/editar/', views.vehicle_edit, name='vehicle_edit'),
     path('panel/vehiculos/<int:pk>/eliminar/', views.vehicle_delete, name='vehicle_delete'),
     path('panel/vehiculos/<int:vehicle_pk>/mantenimiento/nuevo/', views.maintenance_create, name='maintenance_create'),
+    path('panel/mantenimiento/<int:pk>/editar/', views.maintenance_edit, name='maintenance_edit'),
     path('panel/mantenimiento/<int:pk>/eliminar/', views.maintenance_delete, name='maintenance_delete'),
 ]

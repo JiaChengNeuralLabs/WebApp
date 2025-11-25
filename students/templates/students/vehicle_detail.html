@@ -41,7 +41,7 @@
                         <td>{{ vehicle.get_vehicle_type_display }}</td>
                     </tr>
                     <tr>
-                        <th>Ano:</th>
+                        <th>Año:</th>
                         <td>{{ vehicle.year|default:"-" }}</td>
                     </tr>
                     <tr>
@@ -154,6 +154,9 @@
                         </td>
                         <td>{{ m.mileage|default:"-" }}</td>
                         <td>
+                            <a href="{% url 'maintenance_edit' m.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                             <a href="{% url 'maintenance_delete' m.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                 <i class="bi bi-trash"></i>
                             </a>

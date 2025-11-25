@@ -491,6 +491,33 @@ def maintenance_create(request, vehicle_pk):
 
 
 @login_required
+def maintenance_edit(request, pk):
+    """Editar mantenimiento existente"""
+    if not can_access_maintenance(request.user):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('student_list')
+
+    maintenance = get_object_or_404(Maintenance, pk=pk)
+    vehicle = maintenance.vehicle
+
+    if request.method == 'POST':
+        form = MaintenanceForm(request.POST, instance=maintenance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Mantenimiento actualizado correctamente')
+            return redirect('vehicle_detail', pk=vehicle.pk)
+    else:
+        form = MaintenanceForm(instance=maintenance)
+
+    return render(request, 'students/maintenance_form.html', {
+        'form': form,
+        'vehicle': vehicle,
+        'editing': True,
+        'maintenance': maintenance
+    })
+
+
+@login_required
 def maintenance_delete(request, pk):
     """Eliminar mantenimiento"""
     if not can_access_maintenance(request.user):
