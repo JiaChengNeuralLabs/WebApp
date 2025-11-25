@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -181,9 +182,10 @@
             box-shadow: 0 15px 40px rgba(0,206,209,0.3);
         }
 
-        .vehicle-icon {
-            font-size: 5rem;
-            color: #004d4d;
+        .vehicle-img {
+            max-width: 100%;
+            height: 150px;
+            object-fit: contain;
             margin-bottom: 1rem;
         }
 
@@ -479,32 +481,7 @@
                         </a>
                     </div>
                     <div class="col-lg-7 text-center">
-                        <!-- Car SVG Illustration -->
-                        <svg class="hero-car" viewBox="0 0 500 250" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Car body -->
-                            <path d="M50,180 L70,180 L90,130 L180,110 L280,110 L380,130 L420,180 L450,180 L450,200 L420,200 L420,190 C420,185 415,180 410,180 L90,180 C85,180 80,185 80,190 L80,200 L50,200 Z" fill="#40E0D0" stroke="#008B8B" stroke-width="2"/>
-                            <!-- Windows -->
-                            <path d="M100,130 L175,115 L175,170 L100,170 Z" fill="#B0E0E6" stroke="#008B8B" stroke-width="2"/>
-                            <path d="M185,115 L270,115 L270,170 L185,170 Z" fill="#B0E0E6" stroke="#008B8B" stroke-width="2"/>
-                            <path d="M280,118 L360,135 L360,170 L280,170 Z" fill="#B0E0E6" stroke="#008B8B" stroke-width="2"/>
-                            <!-- Wheels -->
-                            <circle cx="120" cy="200" r="35" fill="#333" stroke="#222" stroke-width="3"/>
-                            <circle cx="120" cy="200" r="20" fill="#666"/>
-                            <circle cx="120" cy="200" r="8" fill="#333"/>
-                            <circle cx="380" cy="200" r="35" fill="#333" stroke="#222" stroke-width="3"/>
-                            <circle cx="380" cy="200" r="20" fill="#666"/>
-                            <circle cx="380" cy="200" r="8" fill="#333"/>
-                            <!-- Headlights -->
-                            <ellipse cx="440" cy="165" rx="8" ry="12" fill="#FFD700"/>
-                            <ellipse cx="60" cy="165" rx="6" ry="10" fill="#FF4444"/>
-                            <!-- Door handle -->
-                            <rect x="200" y="145" width="25" height="5" rx="2" fill="#008B8B"/>
-                            <!-- Mirror -->
-                            <ellipse cx="95" cy="125" rx="8" ry="5" fill="#40E0D0" stroke="#008B8B" stroke-width="1"/>
-                            <!-- License plate text -->
-                            <rect x="230" y="175" width="50" height="15" rx="2" fill="white" stroke="#008B8B"/>
-                            <text x="255" y="186" font-family="Arial" font-size="8" fill="#008B8B" text-anchor="middle">CLIO</text>
-                        </svg>
+                        <img src="{% static 'Clio.png' %}" alt="Renault Clio" class="hero-car">
                     </div>
                 </div>
             </div>
@@ -519,19 +496,19 @@
             <div class="row g-4">
                 <div class="col-md-4">
                     <div class="vehicle-card fade-in">
-                        <i class="bi bi-car-front-fill vehicle-icon"></i>
+                        <img src="{% static 'Coche.png' %}" alt="Coche" class="vehicle-img">
                         <h3 class="vehicle-title">Coches</h3>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="vehicle-card fade-in">
-                        <i class="bi bi-bicycle vehicle-icon"></i>
+                        <img src="{% static 'Moto.png' %}" alt="Moto" class="vehicle-img">
                         <h3 class="vehicle-title">Motos</h3>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="vehicle-card fade-in">
-                        <i class="bi bi-truck vehicle-icon"></i>
+                        <img src="{% static 'Trailer.png' %}" alt="Camion y Trailer" class="vehicle-img">
                         <h3 class="vehicle-title">Camiones<br>y Trailer</h3>
                     </div>
                 </div>
