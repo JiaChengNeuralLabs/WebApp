@@ -27,9 +27,7 @@ urlpatterns = [
     path('panel/mantenimiento/<int:pk>/editar/', views.maintenance_edit, name='maintenance_edit'),
     path('panel/mantenimiento/<int:pk>/eliminar/', views.maintenance_delete, name='maintenance_delete'),
 
-    # Gestión de prácticas
-    path('panel/<int:student_pk>/practica/nueva/', views.practice_create, name='practice_create'),
+    # Gestión de prácticas (editar/eliminar para correcciones)
     path('panel/practica/<int:pk>/editar/', views.practice_edit, name='practice_edit'),
     path('panel/practica/<int:pk>/eliminar/', views.practice_delete, name='practice_delete'),
-    path('panel/<int:student_pk>/convertir-bono/', views.convert_to_bonus, name='convert_to_bonus'),
 ]

@@ -22,6 +22,18 @@
                     <strong><i class="bi bi-person-fill"></i> Alumno:</strong> {{ student.first_name }} {{ student.last_name }}
                 </div>
 
+                {% if unbilled_minutes > 0 %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-clock-history"></i>
+                    <strong>Prácticas acumuladas:</strong> {{ unbilled_minutes }} minutos
+                    {% if minutes_for_bonus > 0 %}
+                        (faltan {{ minutes_for_bonus }} min para el bono)
+                    {% else %}
+                        <span class="text-success"><strong>¡Listo para bono!</strong></span>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 <form method="post">
                     {% csrf_token %}
 
@@ -34,7 +46,17 @@
                         <small class="text-muted">Seleccione el tipo de cargo a añadir</small>
                     </div>
 
-                    <div class="mb-3">
+                    <!-- Campo de fecha para prácticas (oculto por defecto) -->
+                    <div class="mb-3" id="practice-date-field" style="display: none;">
+                        <label for="{{ form.practice_date.id_for_label }}" class="form-label">{{ form.practice_date.label }} *</label>
+                        {{ form.practice_date }}
+                        {% if form.practice_date.errors %}
+                            <div class="text-danger">{{ form.practice_date.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">Fecha en que se realizó la práctica</small>
+                    </div>
+
+                    <div class="mb-3" id="amount-field">
                         <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }} *</label>
                         {{ form.amount }}
                         {% if form.amount.errors %}
@@ -49,12 +71,19 @@
                         {% if form.description.errors %}
                             <div class="text-danger">{{ form.description.errors }}</div>
                         {% endif %}
-                        <small class="text-muted">Para el concepto "Otros" es recomendable añadir una descripción</small>
+                        <small class="text-muted" id="description-hint">Para el concepto "Otros" es recomendable añadir una descripción</small>
+                    </div>
+
+                    <!-- Información para prácticas -->
+                    <div class="alert alert-secondary" id="practice-info" style="display: none;">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Nota:</strong> Las prácticas individuales no generan cargo inmediato.
+                        Al acumular 450 minutos se genera automáticamente un bono de 300€.
                     </div>
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-success btn-lg">
-                            <i class="bi bi-check-circle-fill"></i> Añadir Cargo
+                            <i class="bi bi-check-circle-fill"></i> <span id="submit-text">Añadir Cargo</span>
                         </button>
                     </div>
                 </form>
@@ -67,12 +96,20 @@
 // Diccionario de precios predefinidos (parseado desde JSON)
 const conceptPrices = {{ concept_prices_json|safe }};
 
-// Función para actualizar el importe cuando cambia el concepto
-function updateAmount() {
+// Tipos de práctica individual
+const practiceTypes = ['PRACTICE_90', 'PRACTICE_60', 'PRACTICE_45', 'PRACTICE_30'];
+
+// Función para actualizar el formulario cuando cambia el concepto
+function updateForm() {
     const conceptSelect = document.getElementById('id_concept_type');
     const amountInput = document.getElementById('id_amount');
+    const amountField = document.getElementById('amount-field');
     const descriptionField = document.getElementById('description-field');
+    const practiceDateField = document.getElementById('practice-date-field');
+    const practiceInfo = document.getElementById('practice-info');
     const priceHint = document.getElementById('price-hint');
+    const descriptionHint = document.getElementById('description-hint');
+    const submitText = document.getElementById('submit-text');
 
     if (!conceptSelect || !amountInput || !priceHint) {
         console.error('No se encontraron los elementos necesarios');
@@ -81,46 +118,51 @@ function updateAmount() {
 
     const selectedConcept = conceptSelect.value;
     const price = conceptPrices[selectedConcept];
+    const isPractice = practiceTypes.includes(selectedConcept);
 
-    console.log('Concepto seleccionado:', selectedConcept, 'Precio:', price);
+    console.log('Concepto seleccionado:', selectedConcept, 'Es práctica:', isPractice);
 
-    if (selectedConcept === 'OTHER') {
-        // Para "Otros", limpiar el campo y hacerlo editable
-        amountInput.value = '';
-        amountInput.readOnly = false;
-        amountInput.required = true;
-        if (descriptionField) descriptionField.style.display = 'block';
-        priceHint.textContent = 'Ingrese el importe manualmente para conceptos personalizados';
+    if (isPractice) {
+        // Para prácticas individuales
+        practiceDateField.style.display = 'block';
+        practiceInfo.style.display = 'block';
+        amountField.style.display = 'none';
+        descriptionHint.textContent = 'Notas sobre la práctica (opcional)';
+        submitText.textContent = 'Registrar Práctica';
     } else {
-        // Para conceptos predefinidos, poner el precio automáticamente
-        if (price !== undefined) {
-            amountInput.value = price.toFixed(2);
-            amountInput.readOnly = true;
-            amountInput.required = false;
-            if (descriptionField) descriptionField.style.display = 'block';
-            priceHint.textContent = 'Precio predefinido: ' + price.toFixed(2) + '€';
+        // Para otros conceptos
+        practiceDateField.style.display = 'none';
+        practiceInfo.style.display = 'none';
+        amountField.style.display = 'block';
+        descriptionHint.textContent = 'Para el concepto "Otros" es recomendable añadir una descripción';
+        submitText.textContent = 'Añadir Cargo';
+
+        if (selectedConcept === 'OTHER') {
+            // Para "Otros", limpiar el campo y hacerlo editable
+            amountInput.value = '';
+            amountInput.readOnly = false;
+            amountInput.required = true;
+            priceHint.textContent = 'Ingrese el importe manualmente para conceptos personalizados';
+        } else {
+            // Para conceptos predefinidos, poner el precio automáticamente
+            if (price !== undefined) {
+                amountInput.value = price.toFixed(2);
+                amountInput.readOnly = true;
+                amountInput.required = false;
+                priceHint.textContent = 'Precio predefinido: ' + price.toFixed(2) + '€';
+            }
         }
     }
 }
 
 // Ejecutar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM cargado, inicializando...');
-    console.log('Precios disponibles:', conceptPrices);
-
     const conceptSelect = document.getElementById('id_concept_type');
 
     if (conceptSelect) {
-        // Añadir el event listener directamente en JavaScript
-        conceptSelect.addEventListener('change', function() {
-            console.log('Cambio detectado en selector');
-            updateAmount();
-        });
-
+        conceptSelect.addEventListener('change', updateForm);
         // Ejecutar una vez al cargar
-        updateAmount();
-    } else {
-        console.error('No se encontró el selector de conceptos');
+        updateForm();
     }
 });
 </script>

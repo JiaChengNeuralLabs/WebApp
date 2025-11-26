@@ -25,6 +25,17 @@ class StudentForm(forms.ModelForm):
 class VoucherForm(forms.ModelForm):
     """Formulario para anadir cargos/conceptos"""
 
+    # Campo adicional para fecha de práctica (solo visible cuando es práctica)
+    practice_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date',
+            'id': 'id_practice_date'
+        }),
+        label='Fecha de la práctica'
+    )
+
     class Meta:
         model = Voucher
         fields = ['concept_type', 'amount', 'description']
@@ -50,6 +61,18 @@ class VoucherForm(forms.ModelForm):
             'amount': 'Importe (€)',
             'description': 'Descripción adicional'
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        concept_type = cleaned_data.get('concept_type')
+        practice_date = cleaned_data.get('practice_date')
+
+        # Si es una práctica individual, la fecha es obligatoria
+        practice_types = ['PRACTICE_90', 'PRACTICE_60', 'PRACTICE_45', 'PRACTICE_30']
+        if concept_type in practice_types and not practice_date:
+            self.add_error('practice_date', 'La fecha es obligatoria para las prácticas')
+
+        return cleaned_data
 
 
 class PaymentForm(forms.ModelForm):

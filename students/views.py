@@ -218,42 +218,142 @@ def voucher_create(request, student_pk):
 
     student = get_object_or_404(Student, pk=student_pk)
 
+    # Mapeo de tipos de concepto a duración en minutos
+    PRACTICE_DURATION_MAP = {
+        'PRACTICE_90': 90,
+        'PRACTICE_60': 60,
+        'PRACTICE_45': 45,
+        'PRACTICE_30': 30,
+    }
+
     if request.method == 'POST':
         form = VoucherForm(request.POST)
         if form.is_valid():
-            voucher = form.save(commit=False)
-            voucher.student = student
-            voucher.created_by = request.user
+            concept_type = form.cleaned_data['concept_type']
+            practice_date = form.cleaned_data.get('practice_date')
 
-            # Si no se especificó importe y no es "Otros", usar precio predefinido
-            if not voucher.amount or voucher.amount == 0:
-                voucher.amount = Voucher.CONCEPT_PRICES.get(voucher.concept_type, 0)
+            # Si es una práctica individual, crear el registro de práctica
+            if concept_type in PRACTICE_DURATION_MAP:
+                duration = PRACTICE_DURATION_MAP[concept_type]
 
-            voucher.save()
-            concept_name = voucher.get_concept_type_display()
-            # Registrar creación de cargo en el log
-            AuditLog.log_action(
-                user=request.user,
-                action='CREATE',
-                entity_type='VOUCHER',
-                entity_id=voucher.id,
-                entity_name=f'{concept_name} - {student}',
-                description=f'Cargo añadido: {concept_name} de {voucher.amount}€ para {student}',
-                request=request
-            )
-            messages.success(request, f'{concept_name} de {voucher.amount}€ añadido correctamente')
-            return redirect('student_detail', pk=student.pk)
+                # Crear la práctica
+                practice = Practice.objects.create(
+                    student=student,
+                    duration=duration,
+                    practice_date=practice_date,
+                    notes=form.cleaned_data.get('description', ''),
+                    is_billed=False,
+                    created_by=request.user
+                )
+
+                # Registrar en auditoría
+                AuditLog.log_action(
+                    user=request.user,
+                    action='CREATE',
+                    entity_type='VOUCHER',
+                    entity_id=practice.id,
+                    entity_name=f'Práctica {duration}\' - {student}',
+                    description=f'Práctica de {duration} minutos registrada para {student} (fecha: {practice_date})',
+                    request=request
+                )
+
+                # Verificar si hay suficientes minutos para un bono (450 min)
+                unbilled_minutes = Practice.get_unbilled_minutes(student)
+
+                if unbilled_minutes >= 450:
+                    # Aplicar bono automáticamente
+                    unbilled_practices = Practice.get_unbilled_practices(student)
+
+                    # Seleccionar prácticas hasta completar 450 minutos
+                    minutes_to_bill = 0
+                    practices_to_bill = []
+
+                    for p in unbilled_practices:
+                        practices_to_bill.append(p)
+                        minutes_to_bill += p.duration
+                        if minutes_to_bill >= 450:
+                            break
+
+                    # Crear el cargo del bono
+                    voucher = Voucher.objects.create(
+                        student=student,
+                        concept_type='BONUS_5_PRACTICES',
+                        amount=Voucher.CONCEPT_PRICES['BONUS_5_PRACTICES'],
+                        description=f'Bono generado automáticamente ({minutes_to_bill} minutos)',
+                        created_by=request.user
+                    )
+
+                    # Marcar las prácticas como facturadas
+                    for p in practices_to_bill:
+                        p.is_billed = True
+                        p.billed_voucher = voucher
+                        p.save()
+
+                    # Registrar en auditoría
+                    AuditLog.log_action(
+                        user=request.user,
+                        action='CREATE',
+                        entity_type='VOUCHER',
+                        entity_id=voucher.id,
+                        entity_name=f'Bono 5 Prácticas - {student}',
+                        description=f'Bono creado automáticamente: {len(practices_to_bill)} prácticas ({minutes_to_bill} min) convertidas a bono de {voucher.amount}€',
+                        request=request
+                    )
+
+                    messages.success(
+                        request,
+                        f'Práctica de {duration} minutos registrada. ¡Se ha generado automáticamente un bono de {voucher.amount}€ ({minutes_to_bill} minutos facturados)!'
+                    )
+                else:
+                    minutes_remaining = 450 - unbilled_minutes
+                    messages.success(
+                        request,
+                        f'Práctica de {duration} minutos registrada. Acumulados: {unbilled_minutes} minutos (faltan {minutes_remaining} para el bono)'
+                    )
+
+                return redirect('student_detail', pk=student.pk)
+
+            else:
+                # Para conceptos que no son prácticas individuales, comportamiento normal
+                voucher = form.save(commit=False)
+                voucher.student = student
+                voucher.created_by = request.user
+
+                # Si no se especificó importe y no es "Otros", usar precio predefinido
+                if not voucher.amount or voucher.amount == 0:
+                    voucher.amount = Voucher.CONCEPT_PRICES.get(voucher.concept_type, 0)
+
+                voucher.save()
+                concept_name = voucher.get_concept_type_display()
+
+                # Registrar creación de cargo en el log
+                AuditLog.log_action(
+                    user=request.user,
+                    action='CREATE',
+                    entity_type='VOUCHER',
+                    entity_id=voucher.id,
+                    entity_name=f'{concept_name} - {student}',
+                    description=f'Cargo añadido: {concept_name} de {voucher.amount}€ para {student}',
+                    request=request
+                )
+                messages.success(request, f'{concept_name} de {voucher.amount}€ añadido correctamente')
+                return redirect('student_detail', pk=student.pk)
     else:
         form = VoucherForm()
 
     # Convertir precios a float para JSON (evitar problemas con Decimal y localización)
     concept_prices_json = {k: float(v) for k, v in Voucher.CONCEPT_PRICES.items()}
 
+    # Calcular minutos pendientes para mostrar en el formulario
+    unbilled_minutes = Practice.get_unbilled_minutes(student)
+
     # Pasar los precios al template para JavaScript
     context = {
         'form': form,
         'student': student,
-        'concept_prices_json': json.dumps(concept_prices_json)
+        'concept_prices_json': json.dumps(concept_prices_json),
+        'unbilled_minutes': unbilled_minutes,
+        'minutes_for_bonus': max(0, 450 - unbilled_minutes),
     }
     return render(request, 'students/voucher_form.html', context)
 
@@ -546,33 +646,6 @@ def maintenance_delete(request, pk):
 # ==================== PRÁCTICAS ====================
 
 @login_required
-def practice_create(request, student_pk):
-    """Registrar una nueva práctica para un alumno"""
-    student = get_object_or_404(Student, pk=student_pk)
-
-    if request.method == 'POST':
-        form = PracticeForm(request.POST)
-        if form.is_valid():
-            practice = form.save(commit=False)
-            practice.student = student
-            practice.created_by = request.user
-            practice.save()
-            messages.success(request, f'Práctica de {practice.duration} minutos registrada correctamente')
-            return redirect('student_detail', pk=student.pk)
-    else:
-        form = PracticeForm()
-
-    # Calcular minutos pendientes
-    unbilled_minutes = Practice.get_unbilled_minutes(student)
-
-    return render(request, 'students/practice_form.html', {
-        'form': form,
-        'student': student,
-        'unbilled_minutes': unbilled_minutes
-    })
-
-
-@login_required
 def practice_edit(request, pk):
     """Editar una práctica existente"""
     practice = get_object_or_404(Practice, pk=pk)
@@ -618,77 +691,3 @@ def practice_delete(request, pk):
         return redirect('student_detail', pk=student_pk)
 
     return render(request, 'students/practice_confirm_delete.html', {'practice': practice})
-
-
-@login_required
-def convert_to_bonus(request, student_pk):
-    """Convertir prácticas pendientes a bono (450 minutos = 1 bono)"""
-    student = get_object_or_404(Student, pk=student_pk)
-
-    if request.method == 'POST':
-        unbilled_minutes = Practice.get_unbilled_minutes(student)
-
-        if unbilled_minutes < 450:
-            messages.error(request, f'Se necesitan al menos 450 minutos para convertir a bono. Actualmente hay {unbilled_minutes} minutos.')
-            return redirect('student_detail', pk=student.pk)
-
-        # Obtener prácticas no facturadas ordenadas por fecha
-        unbilled_practices = Practice.get_unbilled_practices(student)
-
-        # Seleccionar prácticas hasta llegar a 450 minutos
-        minutes_to_bill = 0
-        practices_to_bill = []
-
-        for practice in unbilled_practices:
-            if minutes_to_bill + practice.duration <= 450:
-                practices_to_bill.append(practice)
-                minutes_to_bill += practice.duration
-            elif minutes_to_bill < 450:
-                # Incluir esta práctica aunque supere los 450
-                practices_to_bill.append(practice)
-                minutes_to_bill += practice.duration
-                break
-
-        if minutes_to_bill < 450:
-            messages.error(request, 'No hay suficientes prácticas para completar un bono.')
-            return redirect('student_detail', pk=student.pk)
-
-        # Crear el cargo del bono
-        voucher = Voucher.objects.create(
-            student=student,
-            concept_type='BONUS_5_PRACTICES',
-            amount=Voucher.CONCEPT_PRICES['BONUS_5_PRACTICES'],
-            description=f'Bono generado automáticamente ({minutes_to_bill} minutos)',
-            created_by=request.user
-        )
-
-        # Marcar las prácticas como facturadas
-        for practice in practices_to_bill:
-            practice.is_billed = True
-            practice.billed_voucher = voucher
-            practice.save()
-
-        # Registrar en auditoría
-        AuditLog.log_action(
-            user=request.user,
-            action='CREATE',
-            entity_type='VOUCHER',
-            entity_id=voucher.id,
-            entity_name=f'Bono 5 Prácticas - {student}',
-            description=f'Bono creado automáticamente: {len(practices_to_bill)} prácticas ({minutes_to_bill} min) convertidas a bono de {voucher.amount}€',
-            request=request
-        )
-
-        messages.success(request, f'Bono creado correctamente. {len(practices_to_bill)} prácticas ({minutes_to_bill} minutos) han sido facturadas.')
-        return redirect('student_detail', pk=student.pk)
-
-    # Si es GET, mostrar confirmación
-    unbilled_minutes = Practice.get_unbilled_minutes(student)
-    unbilled_practices = Practice.get_unbilled_practices(student)
-
-    return render(request, 'students/convert_to_bonus.html', {
-        'student': student,
-        'unbilled_minutes': unbilled_minutes,
-        'unbilled_practices': unbilled_practices,
-        'bonus_price': Voucher.CONCEPT_PRICES['BONUS_5_PRACTICES']
-    })
