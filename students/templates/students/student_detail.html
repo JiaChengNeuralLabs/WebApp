@@ -169,6 +169,13 @@
                                        title="Enviar enlace por WhatsApp">
                                         <i class="bi bi-whatsapp"></i>
                                     </a>
+                                    {% if payment.payment_method == 'CARD' %}
+                                    <a href="{% url 'generate_invoice' payment.pk %}"
+                                       class="btn btn-sm btn-primary"
+                                       title="Descargar Factura PDF">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}

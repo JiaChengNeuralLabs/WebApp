@@ -619,3 +619,129 @@ class Practice(models.Model):
             student=student,
             is_billed=False
         ).order_by('practice_date')
+
+
+class Invoice(models.Model):
+    """Modelo de Factura - Solo para pagos con tarjeta"""
+
+    # Datos de la empresa (valores por defecto ficticios)
+    COMPANY_NAME = "Autoescuela Carrasco"
+    COMPANY_CIF = "B12345678"
+    COMPANY_ADDRESS = "Calle Mayor, 15"
+    COMPANY_CITY = "28001 Madrid"
+    COMPANY_PHONE = "912 345 678"
+    COMPANY_EMAIL = "info@autoescuelacarrasco.es"
+
+    # IVA aplicable
+    IVA_RATE = 21  # 21%
+
+    payment = models.OneToOneField(
+        Payment,
+        on_delete=models.CASCADE,
+        related_name='invoice',
+        verbose_name="Pago"
+    )
+    invoice_number = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name="Número de factura"
+    )
+    date_issued = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha de emisión"
+    )
+    # Datos del cliente en el momento de la factura
+    client_name = models.CharField(
+        max_length=200,
+        verbose_name="Nombre del cliente"
+    )
+    client_dni = models.CharField(
+        max_length=20,
+        verbose_name="DNI del cliente"
+    )
+    client_address = models.TextField(
+        blank=True,
+        verbose_name="Dirección del cliente"
+    )
+    # Importes
+    base_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Base imponible"
+    )
+    iva_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="IVA"
+    )
+    total_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Total"
+    )
+    # Concepto
+    concept = models.CharField(
+        max_length=200,
+        verbose_name="Concepto"
+    )
+
+    class Meta:
+        verbose_name = "Factura"
+        verbose_name_plural = "Facturas"
+        ordering = ['-date_issued']
+
+    def __str__(self):
+        return f"Factura {self.invoice_number} - {self.client_name}"
+
+    @staticmethod
+    def generate_invoice_number():
+        """Genera un número de factura único: AAAA-XXXXX"""
+        from datetime import datetime
+        year = datetime.now().year
+        # Contar facturas del año actual
+        count = Invoice.objects.filter(
+            invoice_number__startswith=f"{year}-"
+        ).count()
+        return f"{year}-{str(count + 1).zfill(5)}"
+
+    @classmethod
+    def create_from_payment(cls, payment):
+        """Crea una factura a partir de un pago con tarjeta"""
+        from decimal import Decimal, ROUND_HALF_UP
+
+        # Solo para pagos con tarjeta
+        if payment.payment_method != 'CARD':
+            return None
+
+        # Verificar si ya existe factura
+        if hasattr(payment, 'invoice'):
+            return payment.invoice
+
+        # Calcular importes (el pago incluye IVA)
+        total = payment.amount
+        # Base = Total / 1.21
+        base = (total / Decimal('1.21')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        iva = total - base
+
+        # Obtener concepto del último voucher o descripción genérica
+        vouchers = payment.student.vouchers.filter(
+            date_created__lte=payment.date_paid
+        ).order_by('-date_created')
+
+        if vouchers.exists():
+            concept = f"Servicios de formación vial - {vouchers.first().get_concept_type_display()}"
+        else:
+            concept = "Servicios de formación vial"
+
+        invoice = cls.objects.create(
+            payment=payment,
+            invoice_number=cls.generate_invoice_number(),
+            client_name=f"{payment.student.first_name} {payment.student.last_name}",
+            client_dni=payment.student.dni,
+            client_address=payment.student.address or "",
+            base_amount=base,
+            iva_amount=iva,
+            total_amount=total,
+            concept=concept
+        )
+        return invoice

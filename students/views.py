@@ -22,7 +22,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from .models import Student, LicenseType, Voucher, Payment, AuditLog, Vehicle, Maintenance, Practice
+from .models import Student, LicenseType, Voucher, Payment, AuditLog, Vehicle, Maintenance, Practice, Invoice
 from .forms import StudentForm, VoucherForm, PaymentForm, VehicleForm, MaintenanceForm, PracticeForm
 
 
@@ -691,3 +691,187 @@ def practice_delete(request, pk):
         return redirect('student_detail', pk=student_pk)
 
     return render(request, 'students/practice_confirm_delete.html', {'practice': practice})
+
+
+# ==================== FACTURAS ====================
+
+@login_required
+def generate_invoice_pdf(request, payment_pk):
+    """Genera y descarga la factura en PDF para un pago con tarjeta"""
+    from django.http import HttpResponse
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+    import io
+
+    payment = get_object_or_404(Payment, pk=payment_pk)
+
+    # Solo facturas para pagos con tarjeta
+    if payment.payment_method != 'CARD':
+        messages.error(request, 'Las facturas solo se generan para pagos con tarjeta.')
+        return redirect('student_detail', pk=payment.student.pk)
+
+    # Crear o recuperar la factura
+    invoice = Invoice.create_from_payment(payment)
+
+    # Crear el PDF en memoria
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=2*cm,
+        leftMargin=2*cm,
+        topMargin=2*cm,
+        bottomMargin=2*cm
+    )
+
+    # Estilos
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name='CompanyName',
+        fontSize=18,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#27ae60'),
+        alignment=TA_LEFT
+    ))
+    styles.add(ParagraphStyle(
+        name='InvoiceTitle',
+        fontSize=24,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#333333'),
+        alignment=TA_RIGHT
+    ))
+    styles.add(ParagraphStyle(
+        name='SectionTitle',
+        fontSize=12,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#27ae60'),
+        spaceAfter=6
+    ))
+    styles.add(ParagraphStyle(
+        name='Normal_Right',
+        fontSize=10,
+        alignment=TA_RIGHT
+    ))
+
+    elements = []
+
+    # ===== CABECERA =====
+    # Tabla con datos empresa a la izquierda y "FACTURA" a la derecha
+    header_data = [
+        [
+            Paragraph(f"<b>{Invoice.COMPANY_NAME}</b>", styles['CompanyName']),
+            Paragraph("FACTURA", styles['InvoiceTitle'])
+        ],
+        [
+            Paragraph(f"CIF: {Invoice.COMPANY_CIF}<br/>{Invoice.COMPANY_ADDRESS}<br/>{Invoice.COMPANY_CITY}<br/>Tel: {Invoice.COMPANY_PHONE}<br/>{Invoice.COMPANY_EMAIL}", styles['Normal']),
+            Paragraph(f"<b>Nº:</b> {invoice.invoice_number}<br/><b>Fecha:</b> {invoice.date_issued.strftime('%d/%m/%Y')}", styles['Normal_Right'])
+        ]
+    ]
+
+    header_table = Table(header_data, colWidths=[10*cm, 7*cm])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+    ]))
+    elements.append(header_table)
+    elements.append(Spacer(1, 1*cm))
+
+    # ===== DATOS DEL CLIENTE =====
+    elements.append(Paragraph("DATOS DEL CLIENTE", styles['SectionTitle']))
+
+    client_data = [
+        ['Nombre:', invoice.client_name],
+        ['DNI:', invoice.client_dni],
+    ]
+    if invoice.client_address:
+        client_data.append(['Dirección:', invoice.client_address])
+
+    client_table = Table(client_data, colWidths=[3*cm, 14*cm])
+    client_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(client_table)
+    elements.append(Spacer(1, 1*cm))
+
+    # ===== DETALLE DE LA FACTURA =====
+    elements.append(Paragraph("DETALLE", styles['SectionTitle']))
+
+    detail_data = [
+        ['Concepto', 'Base Imponible', f'IVA ({Invoice.IVA_RATE}%)', 'Total'],
+        [invoice.concept, f'{invoice.base_amount:.2f} €', f'{invoice.iva_amount:.2f} €', f'{invoice.total_amount:.2f} €'],
+    ]
+
+    detail_table = Table(detail_data, colWidths=[8*cm, 3*cm, 3*cm, 3*cm])
+    detail_table.setStyle(TableStyle([
+        # Cabecera
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#27ae60')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        # Contenido
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+        # Bordes
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(detail_table)
+    elements.append(Spacer(1, 0.5*cm))
+
+    # ===== TOTALES =====
+    totals_data = [
+        ['Base Imponible:', f'{invoice.base_amount:.2f} €'],
+        [f'IVA ({Invoice.IVA_RATE}%):', f'{invoice.iva_amount:.2f} €'],
+        ['TOTAL:', f'{invoice.total_amount:.2f} €'],
+    ]
+
+    totals_table = Table(totals_data, colWidths=[13*cm, 4*cm])
+    totals_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#f0f0f0')),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(totals_table)
+    elements.append(Spacer(1, 1.5*cm))
+
+    # ===== MÉTODO DE PAGO =====
+    elements.append(Paragraph("INFORMACIÓN DE PAGO", styles['SectionTitle']))
+    elements.append(Paragraph(f"<b>Método de pago:</b> Tarjeta", styles['Normal']))
+    elements.append(Paragraph(f"<b>Fecha de pago:</b> {payment.date_paid.strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 2*cm))
+
+    # ===== PIE =====
+    footer_text = f"""
+    <para align="center">
+    <font size="8" color="#666666">
+    {Invoice.COMPANY_NAME} - CIF: {Invoice.COMPANY_CIF}<br/>
+    {Invoice.COMPANY_ADDRESS}, {Invoice.COMPANY_CITY}<br/>
+    Este documento sirve como justificante de pago.
+    </font>
+    </para>
+    """
+    elements.append(Paragraph(footer_text, styles['Normal']))
+
+    # Construir el PDF
+    doc.build(elements)
+
+    # Preparar respuesta
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="factura_{invoice.invoice_number}.pdf"'
+
+    return response

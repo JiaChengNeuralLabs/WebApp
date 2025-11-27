@@ -30,4 +30,7 @@ urlpatterns = [
     # Gestión de prácticas (editar/eliminar para correcciones)
     path('panel/practica/<int:pk>/editar/', views.practice_edit, name='practice_edit'),
     path('panel/practica/<int:pk>/eliminar/', views.practice_delete, name='practice_delete'),
+
+    # Facturas (solo pagos con tarjeta)
+    path('panel/pago/<int:payment_pk>/factura/', views.generate_invoice_pdf, name='generate_invoice'),
 ]
