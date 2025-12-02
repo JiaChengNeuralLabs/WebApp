@@ -38,8 +38,8 @@ allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', '')
 if allowed_hosts_env:
     ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',')]
 else:
-    # En desarrollo: localhost. En Render: permitir dominios .onrender.com
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
+    # En desarrollo: localhost. En producción: Render y PythonAnywhere
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com', '.pythonanywhere.com']
 
 # Número de WhatsApp de la autoescuela (formato internacional sin +)
 # Ejemplo: 34612345678 para +34 612 34 56 78
