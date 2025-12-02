@@ -1,0 +1,82 @@
+[
+    {
+        "model": "students.licensetype",
+        "pk": 1,
+        "fields": {
+            "name": "AM",
+            "description": "Ciclomotores"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 2,
+        "fields": {
+            "name": "A1",
+            "description": "Motocicletas hasta 125cc"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 3,
+        "fields": {
+            "name": "A2",
+            "description": "Motocicletas hasta 35kW"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 4,
+        "fields": {
+            "name": "A",
+            "description": "Motocicletas sin limite"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 5,
+        "fields": {
+            "name": "B",
+            "description": "Turismos"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 6,
+        "fields": {
+            "name": "B+E",
+            "description": "Turismos con remolque"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 7,
+        "fields": {
+            "name": "C1",
+            "description": "Camiones hasta 7.500kg"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 8,
+        "fields": {
+            "name": "C",
+            "description": "Camiones sin limite"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 9,
+        "fields": {
+            "name": "D1",
+            "description": "Autobuses hasta 17 plazas"
+        }
+    },
+    {
+        "model": "students.licensetype",
+        "pk": 10,
+        "fields": {
+            "name": "D",
+            "description": "Autobuses sin limite"
+        }
+    }
+]
