@@ -676,13 +676,30 @@ def practice_edit(request, pk):
     practice = get_object_or_404(Practice, pk=pk)
     student = practice.student
 
-    if practice.is_billed:
-        messages.error(request, 'No se puede editar una práctica que ya ha sido facturada en un bono.')
+    # Solo bloquear edición si está en un bono agrupado (BONUS_5_PRACTICES)
+    if practice.is_billed and practice.billed_voucher and practice.billed_voucher.concept_type == 'BONUS_5_PRACTICES':
+        messages.error(request, 'No se puede editar una práctica que ya ha sido facturada en un bono agrupado.')
         return redirect('student_detail', pk=student.pk)
 
     if request.method == 'POST':
         form = PracticeForm(request.POST, instance=practice)
         if form.is_valid():
+            old_duration = practice.duration
+            new_duration = form.cleaned_data['duration']
+
+            # Si cambió la duración y tiene cargo individual, actualizar el cargo
+            if practice.billed_voucher and practice.billed_voucher.concept_type in ['PRACTICE_90', 'PRACTICE_60', 'PRACTICE_45', 'PRACTICE_30']:
+                # Determinar el nuevo tipo de concepto según la duración
+                duration_to_concept = {90: 'PRACTICE_90', 60: 'PRACTICE_60', 45: 'PRACTICE_45', 30: 'PRACTICE_30'}
+                new_concept = duration_to_concept.get(new_duration)
+
+                if new_concept:
+                    voucher = practice.billed_voucher
+                    voucher.concept_type = new_concept
+                    voucher.amount = Voucher.CONCEPT_PRICES[new_concept]
+                    voucher.description = f'Práctica {form.cleaned_data["practice_date"].strftime("%d/%m/%Y")}'
+                    voucher.save()
+
             form.save()
             messages.success(request, 'Práctica actualizada correctamente')
             return redirect('student_detail', pk=student.pk)
@@ -706,13 +723,18 @@ def practice_delete(request, pk):
     practice = get_object_or_404(Practice, pk=pk)
     student_pk = practice.student.pk
 
-    if practice.is_billed:
-        messages.error(request, 'No se puede eliminar una práctica que ya ha sido facturada en un bono.')
+    # Solo bloquear eliminación si está en un bono agrupado (BONUS_5_PRACTICES)
+    if practice.is_billed and practice.billed_voucher and practice.billed_voucher.concept_type == 'BONUS_5_PRACTICES':
+        messages.error(request, 'No se puede eliminar una práctica que ya ha sido facturada en un bono agrupado.')
         return redirect('student_detail', pk=student_pk)
 
     if request.method == 'POST':
+        # Si tiene cargo individual asociado, eliminarlo también
+        if practice.billed_voucher and practice.billed_voucher.concept_type in ['PRACTICE_90', 'PRACTICE_60', 'PRACTICE_45', 'PRACTICE_30']:
+            practice.billed_voucher.delete()
+
         practice.delete()
-        messages.success(request, 'Práctica eliminada correctamente')
+        messages.success(request, 'Práctica y cargo asociado eliminados correctamente')
         return redirect('student_detail', pk=student_pk)
 
     return render(request, 'students/practice_confirm_delete.html', {'practice': practice})

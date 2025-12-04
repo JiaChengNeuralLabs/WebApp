@@ -237,7 +237,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if not practice.is_billed %}
+                                    {% if not practice.is_billed or practice.billed_voucher.concept_type != 'BONUS_5_PRACTICES' %}
                                     <a href="{% url 'practice_edit' practice.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
@@ -245,7 +245,7 @@
                                         <i class="bi bi-trash"></i>
                                     </a>
                                     {% else %}
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted" title="Incluida en bono agrupado">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
