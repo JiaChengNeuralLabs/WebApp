@@ -75,10 +75,10 @@
                     </div>
 
                     <!-- Información para prácticas -->
-                    <div class="alert alert-secondary" id="practice-info" style="display: none;">
+                    <div class="alert alert-success" id="practice-info" style="display: none;">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Nota:</strong> Las prácticas individuales no generan cargo inmediato.
-                        Al acumular 450 minutos se genera automáticamente un bono de 300€.
+                        <strong>Nota:</strong> La práctica se cobrará al precio indicado.
+                        Al acumular 450 minutos se aplicará automáticamente un descuento de 25€.
                     </div>
 
                     <div class="d-grid gap-2">
@@ -123,12 +123,19 @@ function updateForm() {
     console.log('Concepto seleccionado:', selectedConcept, 'Es práctica:', isPractice);
 
     if (isPractice) {
-        // Para prácticas individuales
+        // Para prácticas individuales - mostrar fecha y precio
         practiceDateField.style.display = 'block';
         practiceInfo.style.display = 'block';
-        amountField.style.display = 'none';
+        amountField.style.display = 'block';
         descriptionHint.textContent = 'Notas sobre la práctica (opcional)';
         submitText.textContent = 'Registrar Práctica';
+
+        // Mostrar precio de la práctica
+        if (price !== undefined) {
+            amountInput.value = price.toFixed(2);
+            amountInput.readOnly = true;
+            priceHint.textContent = 'Precio de la práctica: ' + price.toFixed(2) + '€';
+        }
     } else {
         // Para otros conceptos
         practiceDateField.style.display = 'none';

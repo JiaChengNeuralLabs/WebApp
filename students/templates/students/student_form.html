@@ -21,6 +21,14 @@
                 <form method="post">
                     {% csrf_token %}
 
+                    <div class="mb-3">
+                        <label for="{{ form.expedition_number.id_for_label }}" class="form-label">{{ form.expedition_number.label }}</label>
+                        {{ form.expedition_number }}
+                        {% if form.expedition_number.errors %}
+                            <div class="text-danger">{{ form.expedition_number.errors }}</div>
+                        {% endif %}
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }} *</label>
