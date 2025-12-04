@@ -36,6 +36,11 @@ class LicenseType(models.Model):
 
 class Student(models.Model):
     """Modelo de Alumno"""
+    expedition_number = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Número de expediente"
+    )
     first_name = models.CharField(max_length=100, verbose_name="Nombre")
     last_name = models.CharField(max_length=100, verbose_name="Apellidos")
     dni = models.CharField(max_length=20, unique=True, verbose_name="DNI")
@@ -108,6 +113,7 @@ class Voucher(models.Model):
         ('PRACTICE_45', 'Práctica 45\''),
         ('PRACTICE_30', 'Práctica 30\''),
         ('BONUS_5_PRACTICES', 'Bono 5 Prácticas 90\''),
+        ('BONUS_DISCOUNT', 'Descuento Bono 450\''),
         ('OTHER', 'Otros'),
     ]
 
@@ -122,6 +128,7 @@ class Voucher(models.Model):
         'PRACTICE_45': 32.50,
         'PRACTICE_30': 80.00,
         'BONUS_5_PRACTICES': 300.00,
+        'BONUS_DISCOUNT': -25.00,  # Descuento por alcanzar 450 minutos
         'OTHER': 0.00,  # Para "Otros" el usuario ingresa el importe
     }
 

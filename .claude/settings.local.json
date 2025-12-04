@@ -20,7 +20,8 @@
       "Bash(git merge:*)",
       "Bash(cat:*)",
       "Bash(pip install:*)",
-      "Bash(timeout 5 bash -c 'python manage.py runserver 8080 > nul 2>&1 & sleep 2 && curl -s http://localhost:8080/students/login/ -o nul && echo \"\"Server started successfully\"\" || echo \"\"Server failed to start\"\"')"
+      "Bash(timeout 5 bash -c 'python manage.py runserver 8080 > nul 2>&1 & sleep 2 && curl -s http://localhost:8080/students/login/ -o nul && echo \"\"Server started successfully\"\" || echo \"\"Server failed to start\"\"')",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

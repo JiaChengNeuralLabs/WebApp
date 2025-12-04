@@ -8,8 +8,9 @@ class StudentForm(forms.ModelForm):
 
     class Meta:
         model = Student
-        fields = ['first_name', 'last_name', 'dni', 'email', 'phone', 'address', 'license_type', 'is_active', 'notes']
+        fields = ['expedition_number', 'first_name', 'last_name', 'dni', 'email', 'phone', 'address', 'license_type', 'is_active', 'notes']
         widgets = {
+            'expedition_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número de expediente (opcional)'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellidos'}),
             'dni': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'DNI'}),

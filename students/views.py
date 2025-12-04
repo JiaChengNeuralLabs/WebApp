@@ -134,21 +134,31 @@ def student_create(request):
 @login_required
 def student_detail(request, pk):
     """Detalle del alumno con información financiera"""
+    from django.db.models import Sum
+
     student = get_object_or_404(Student, pk=pk)
     vouchers = student.vouchers.all()
     payments = student.payments.all()
     practices = student.practices.all().order_by('-practice_date')
 
-    # Calcular minutos de prácticas pendientes de facturar
-    unbilled_minutes = Practice.get_unbilled_minutes(student)
-    minutes_for_bonus = max(0, 450 - unbilled_minutes)
+    # Calcular minutos de prácticas (todas las facturadas individualmente)
+    practices_for_bonus = Practice.objects.filter(
+        student=student,
+        is_billed=True,
+        billed_voucher__concept_type__in=['PRACTICE_90', 'PRACTICE_60', 'PRACTICE_45', 'PRACTICE_30']
+    )
+    total_practice_minutes = practices_for_bonus.aggregate(total=Sum('duration'))['total'] or 0
+
+    # Calcular minutos restantes para el próximo descuento
+    minutes_for_bonus = 450 - (total_practice_minutes % 450) if total_practice_minutes > 0 else 450
 
     context = {
         'student': student,
         'vouchers': vouchers,
         'payments': payments,
         'practices': practices,
-        'unbilled_minutes': unbilled_minutes,
+        'unbilled_minutes': total_practice_minutes % 450,  # Minutos hacia el próximo bono
+        'total_practice_minutes': total_practice_minutes,
         'minutes_for_bonus': minutes_for_bonus,
         'total_debt': student.get_total_debt(),
         'total_paid': student.get_total_paid(),
@@ -232,17 +242,28 @@ def voucher_create(request, student_pk):
             concept_type = form.cleaned_data['concept_type']
             practice_date = form.cleaned_data.get('practice_date')
 
-            # Si es una práctica individual, crear el registro de práctica
+            # Si es una práctica individual, crear el registro de práctica Y el cargo
             if concept_type in PRACTICE_DURATION_MAP:
                 duration = PRACTICE_DURATION_MAP[concept_type]
+                practice_price = Voucher.CONCEPT_PRICES[concept_type]
 
-                # Crear la práctica
+                # Crear el cargo de la práctica individual
+                voucher = Voucher.objects.create(
+                    student=student,
+                    concept_type=concept_type,
+                    amount=practice_price,
+                    description=f'Práctica {practice_date.strftime("%d/%m/%Y")}',
+                    created_by=request.user
+                )
+
+                # Crear la práctica asociada al cargo
                 practice = Practice.objects.create(
                     student=student,
                     duration=duration,
                     practice_date=practice_date,
                     notes=form.cleaned_data.get('description', ''),
-                    is_billed=False,
+                    is_billed=True,  # Ya está facturada con el cargo individual
+                    billed_voucher=voucher,
                     created_by=request.user
                 )
 
@@ -251,64 +272,68 @@ def voucher_create(request, student_pk):
                     user=request.user,
                     action='CREATE',
                     entity_type='VOUCHER',
-                    entity_id=practice.id,
+                    entity_id=voucher.id,
                     entity_name=f'Práctica {duration}\' - {student}',
-                    description=f'Práctica de {duration} minutos registrada para {student} (fecha: {practice_date})',
+                    description=f'Práctica de {duration} minutos ({practice_price}€) registrada para {student} (fecha: {practice_date})',
                     request=request
                 )
 
-                # Verificar si hay suficientes minutos para un bono (450 min)
-                unbilled_minutes = Practice.get_unbilled_minutes(student)
+                # Verificar si hay suficientes minutos para aplicar descuento de bono (450 min)
+                # Contar minutos de prácticas del alumno que NO tienen descuento aplicado
+                from django.db.models import Sum
 
-                if unbilled_minutes >= 450:
-                    # Aplicar bono automáticamente
-                    unbilled_practices = Practice.get_unbilled_practices(student)
+                # Obtener todas las prácticas que cuentan para el bono (las individuales facturadas)
+                practices_for_bonus = Practice.objects.filter(
+                    student=student,
+                    is_billed=True,
+                    billed_voucher__concept_type__in=['PRACTICE_90', 'PRACTICE_60', 'PRACTICE_45', 'PRACTICE_30']
+                )
+                total_practice_minutes = practices_for_bonus.aggregate(total=Sum('duration'))['total'] or 0
 
-                    # Seleccionar prácticas hasta completar 450 minutos
-                    minutes_to_bill = 0
-                    practices_to_bill = []
+                # Calcular cuántos bonos completos hay (cada 450 minutos)
+                # Contar descuentos ya aplicados
+                discounts_applied = Voucher.objects.filter(
+                    student=student,
+                    concept_type='BONUS_DISCOUNT'
+                ).count()
 
-                    for p in unbilled_practices:
-                        practices_to_bill.append(p)
-                        minutes_to_bill += p.duration
-                        if minutes_to_bill >= 450:
-                            break
+                bonuses_earned = total_practice_minutes // 450
+                bonuses_pending = bonuses_earned - discounts_applied
 
-                    # Crear el cargo del bono
-                    voucher = Voucher.objects.create(
+                if bonuses_pending > 0:
+                    # Calcular el descuento: precio de 5 prácticas de 90' (5 x 65€ = 325€) - precio bono (300€) = 25€ de ahorro
+                    # Pero ahora cobramos cada práctica, así que el descuento es la diferencia
+                    # 5 prácticas de 90' = 325€, bono = 300€, descuento = 25€
+                    discount_amount = Decimal('25.00')  # Descuento por alcanzar el bono
+
+                    discount_voucher = Voucher.objects.create(
                         student=student,
-                        concept_type='BONUS_5_PRACTICES',
-                        amount=Voucher.CONCEPT_PRICES['BONUS_5_PRACTICES'],
-                        description=f'Bono generado automáticamente ({minutes_to_bill} minutos)',
+                        concept_type='BONUS_DISCOUNT',
+                        amount=-discount_amount,  # Importe negativo = descuento
+                        description=f'Descuento por bono 450\' (prácticas acumuladas: {total_practice_minutes}\')',
                         created_by=request.user
                     )
-
-                    # Marcar las prácticas como facturadas
-                    for p in practices_to_bill:
-                        p.is_billed = True
-                        p.billed_voucher = voucher
-                        p.save()
 
                     # Registrar en auditoría
                     AuditLog.log_action(
                         user=request.user,
                         action='CREATE',
                         entity_type='VOUCHER',
-                        entity_id=voucher.id,
-                        entity_name=f'Bono 5 Prácticas - {student}',
-                        description=f'Bono creado automáticamente: {len(practices_to_bill)} prácticas ({minutes_to_bill} min) convertidas a bono de {voucher.amount}€',
+                        entity_id=discount_voucher.id,
+                        entity_name=f'Descuento Bono - {student}',
+                        description=f'Descuento de {discount_amount}€ aplicado por alcanzar 450 minutos de prácticas',
                         request=request
                     )
 
                     messages.success(
                         request,
-                        f'Práctica de {duration} minutos registrada. ¡Se ha generado automáticamente un bono de {voucher.amount}€ ({minutes_to_bill} minutos facturados)!'
+                        f'Práctica de {duration}\' ({practice_price}€) registrada. ¡Has alcanzado {total_practice_minutes}\' y se ha aplicado un descuento de {discount_amount}€!'
                     )
                 else:
-                    minutes_remaining = 450 - unbilled_minutes
+                    minutes_for_next_bonus = 450 - (total_practice_minutes % 450)
                     messages.success(
                         request,
-                        f'Práctica de {duration} minutos registrada. Acumulados: {unbilled_minutes} minutos (faltan {minutes_remaining} para el bono)'
+                        f'Práctica de {duration}\' ({practice_price}€) registrada. Acumulados: {total_practice_minutes}\' (faltan {minutes_for_next_bonus}\' para el próximo descuento)'
                     )
 
                 return redirect('student_detail', pk=student.pk)
