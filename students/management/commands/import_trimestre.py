@@ -1,5 +1,5 @@
 """
-Comando para importar alumnos y pagos desde archivos Excel Trimestre-X.xlsx
+Comando para importar alumnos, pagos y facturas trimestrales desde archivos Excel Trimestre-X.xlsx
 
 Uso:
     python manage.py import_trimestre C:\\path\\to\\Trimestre-1.xlsx
@@ -9,6 +9,7 @@ El comando:
 1. Crea alumnos nuevos si no existen (busca por DNI)
 2. Actualiza direccion de alumnos existentes si esta vacia
 3. Registra pagos con el TOTAL de cada fila del Excel
+4. Crea facturas trimestrales (TaxInvoice) con los datos de BASE, IVA, TASAS
 
 Columnas esperadas del Excel:
     A: CURSO, B: N FACTURA, C: FECHA, D: NOMBRE Y APELLIDOS, E: DNI,
@@ -17,14 +18,15 @@ Columnas esperadas del Excel:
 """
 
 from django.core.management.base import BaseCommand, CommandError
-from students.models import Student, Payment, LicenseType
+from students.models import Student, Payment, LicenseType, TaxInvoice
 from pathlib import Path
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
+import re
 
 
 class Command(BaseCommand):
-    help = 'Importa alumnos y pagos desde un archivo Excel trimestral (Trimestre-X.xlsx)'
+    help = 'Importa alumnos, pagos y facturas trimestrales desde un archivo Excel (Trimestre-X.xlsx)'
 
     def add_arguments(self, parser):
         parser.add_argument('excel_file', type=str, help='Ruta al archivo Excel')
@@ -103,6 +105,10 @@ class Command(BaseCommand):
         if isinstance(value, datetime):
             return value
 
+        # Si es date
+        if hasattr(value, 'year') and hasattr(value, 'month') and hasattr(value, 'day'):
+            return datetime(value.year, value.month, value.day)
+
         # Si es string, intentar parsear
         value_str = str(value).strip()
 
@@ -150,6 +156,104 @@ class Command(BaseCommand):
 
         return license_type
 
+    def get_curso_code(self, curso):
+        """Obtiene el código de curso para TaxInvoice."""
+        if not curso:
+            return 'B'
+
+        curso = str(curso).upper().strip()
+
+        mapping = {
+            'AM': 'AM',
+            'A1': 'A1',
+            'A2': 'A2',
+            'A': 'A',
+            'B': 'B',
+            'C': 'C',
+            'C+E': 'C+E',
+            'CE': 'C+E',
+        }
+
+        return mapping.get(curso, 'B')
+
+    def detect_tasas(self, tasas_amount):
+        """
+        Detecta qué tasas están incluidas basándose en el importe total de tasas.
+        Tasas DGT:
+        - Tasa Básica: 94.05€
+        - Tasa A (motos): 28.87€
+        - Traslado: 8.67€
+        - Renovación: 94.05€ (misma que básica)
+        """
+        if tasas_amount <= 0:
+            return False, False, False, 0
+
+        # Constantes de tasas
+        TASA_BASICA = Decimal('94.05')
+        TASA_A = Decimal('28.87')
+        TRASLADO = Decimal('8.67')
+
+        has_tasa_basica = False
+        has_tasa_a = False
+        has_traslado = False
+        renovaciones = 0
+
+        remaining = tasas_amount
+
+        # Detectar traslado primero (es el más pequeño y específico)
+        if remaining >= TRASLADO and (remaining - TRASLADO) % TASA_BASICA == 0:
+            # Probablemente hay traslado
+            pass  # Lo verificamos después
+
+        # Detectar tasa A (motos)
+        if remaining >= TASA_A:
+            # Verificar si el resto es múltiplo de tasa básica o coincide
+            test_remaining = remaining - TASA_A
+            if test_remaining >= 0 and test_remaining % TASA_BASICA == 0:
+                has_tasa_a = True
+                remaining = test_remaining
+
+        # Detectar traslado
+        if remaining >= TRASLADO:
+            test_remaining = remaining - TRASLADO
+            if test_remaining >= 0 and test_remaining % TASA_BASICA == 0:
+                has_traslado = True
+                remaining = test_remaining
+
+        # El resto son tasas básicas / renovaciones
+        if remaining > 0:
+            num_basicas = int(remaining / TASA_BASICA)
+            if num_basicas > 0 and remaining == num_basicas * TASA_BASICA:
+                if num_basicas == 1:
+                    has_tasa_basica = True
+                else:
+                    has_tasa_basica = True
+                    renovaciones = num_basicas - 1
+
+        # Verificación: si no detectamos nada pero hay tasas, asumir tasa básica
+        if tasas_amount > 0 and not has_tasa_basica and not has_tasa_a and not has_traslado:
+            # Aproximación: si es cercano a 94.05, es tasa básica
+            if abs(tasas_amount - TASA_BASICA) < Decimal('1.00'):
+                has_tasa_basica = True
+            elif tasas_amount > TASA_BASICA:
+                has_tasa_basica = True
+                renovaciones = max(0, int((tasas_amount - TASA_BASICA) / TASA_BASICA))
+
+        return has_tasa_basica, has_tasa_a, has_traslado, renovaciones
+
+    def get_quarter_from_date(self, date):
+        """Retorna el trimestre (1-4) desde una fecha."""
+        if not date:
+            return 1
+        month = date.month
+        if 1 <= month <= 3:
+            return 1
+        elif 4 <= month <= 6:
+            return 2
+        elif 7 <= month <= 9:
+            return 3
+        return 4
+
     def handle(self, *args, **options):
         try:
             from openpyxl import load_workbook
@@ -173,7 +277,9 @@ class Command(BaseCommand):
         students_created = 0
         students_updated = 0
         payments_created = 0
-        payments_skipped = 0  # Pagos duplicados
+        payments_skipped = 0
+        invoices_created = 0
+        invoices_skipped = 0
         rows_skipped = 0
 
         # Columnas (1-indexed para openpyxl):
@@ -205,7 +311,11 @@ class Command(BaseCommand):
             # Parsear datos
             first_name, last_name = self.parse_name(nombre_completo)
             total_amount = self.parse_amount(total)
+            base_amount = self.parse_amount(base_imponible)
+            iva_amount = self.parse_amount(iva)
+            tasas_amount = self.parse_amount(tasas)
             fecha_parsed = self.parse_date(fecha)
+            n_factura_str = str(n_factura).strip() if n_factura else None
 
             if not first_name and not last_name:
                 self.stdout.write(self.style.WARNING(
@@ -215,9 +325,9 @@ class Command(BaseCommand):
                 continue
 
             # Buscar o crear alumno
+            student = None
             try:
                 student = Student.objects.get(dni__iexact=dni_clean)
-                is_new_student = False
 
                 # Actualizar direccion si esta vacia
                 updated_fields = []
@@ -248,7 +358,6 @@ class Command(BaseCommand):
 
             except Student.DoesNotExist:
                 # Crear alumno nuevo
-                is_new_student = True
                 license_type = self.get_license_type(curso)
 
                 if not dry_run:
@@ -281,47 +390,104 @@ class Command(BaseCommand):
                 continue
 
             # Registrar pago si hay importe
-            if total_amount > 0:
-                # Crear identificador único basado en número de factura o DNI+importe+fecha
-                n_factura_str = str(n_factura).strip() if n_factura else None
+            payment = None
+            if total_amount > 0 and not dry_run and student:
+                # Verificar duplicados
+                existing_payment = None
 
-                if not dry_run:
-                    # Verificar duplicados de múltiples formas:
-                    existing_payment = None
+                # 1. Buscar por número de factura en las notas
+                if n_factura_str:
+                    existing_payment = Payment.objects.filter(
+                        student=student,
+                        notes__icontains=f'Factura {n_factura_str}'
+                    ).first()
 
-                    # 1. Buscar por número de factura en las notas (más fiable)
-                    if n_factura_str:
-                        existing_payment = Payment.objects.filter(
-                            student=student,
-                            notes__icontains=f'Factura {n_factura_str}'
-                        ).first()
+                # 2. Si no hay número de factura, buscar por importe+fecha
+                if not existing_payment and fecha_parsed:
+                    existing_payment = Payment.objects.filter(
+                        student=student,
+                        amount=total_amount,
+                        date_paid__date=fecha_parsed.date() if hasattr(fecha_parsed, 'date') else fecha_parsed
+                    ).first()
 
-                    # 2. Si no hay número de factura, buscar por importe+fecha
-                    if not existing_payment and fecha_parsed:
-                        existing_payment = Payment.objects.filter(
-                            student=student,
-                            amount=total_amount,
-                            date_paid__date=fecha_parsed.date() if hasattr(fecha_parsed, 'date') else fecha_parsed
-                        ).first()
-
-                    if not existing_payment:
-                        payment = Payment.objects.create(
-                            student=student,
-                            amount=total_amount,
-                            payment_method='CARD',  # Asumimos tarjeta para facturas trimestrales
-                            date_paid=fecha_parsed or datetime.now(),
-                            notes=f'Importado de {excel_path.name} - Factura {n_factura_str or "N/A"}'
-                        )
-                        payments_created += 1
-                        self.stdout.write(f'    + Pago: {total_amount}€ - Factura {n_factura_str or "N/A"}')
-                    else:
-                        payments_skipped += 1
-                        self.stdout.write(self.style.WARNING(
-                            f'    = Pago ya existe: {total_amount}€ - Factura {n_factura_str or "N/A"}'
-                        ))
-                else:
+                if not existing_payment:
+                    payment = Payment.objects.create(
+                        student=student,
+                        amount=total_amount,
+                        payment_method='CARD',
+                        date_paid=fecha_parsed or datetime.now(),
+                        notes=f'Importado de {excel_path.name} - Factura {n_factura_str or "N/A"}'
+                    )
                     payments_created += 1
-                    self.stdout.write(f'    [DRY] + Pago: {total_amount}€ - Factura {n_factura_str or "N/A"}')
+                    self.stdout.write(f'    + Pago: {total_amount}€ - Factura {n_factura_str or "N/A"}')
+                else:
+                    payment = existing_payment  # Usar el pago existente para la factura
+                    payments_skipped += 1
+                    self.stdout.write(self.style.WARNING(
+                        f'    = Pago ya existe: {total_amount}€ - Factura {n_factura_str or "N/A"}'
+                    ))
+            elif total_amount > 0 and dry_run:
+                payments_created += 1
+                self.stdout.write(f'    [DRY] + Pago: {total_amount}€ - Factura {n_factura_str or "N/A"}')
+
+            # Crear factura trimestral si hay número de factura
+            if n_factura_str and total_amount > 0 and not dry_run and student:
+                # Verificar si ya existe la factura
+                existing_invoice = TaxInvoice.objects.filter(
+                    invoice_number=n_factura_str
+                ).first()
+
+                if not existing_invoice:
+                    # Detectar tasas
+                    has_tasa_basica, has_tasa_a, has_traslado, renovaciones = self.detect_tasas(tasas_amount)
+
+                    # Determinar trimestre y año
+                    invoice_date = fecha_parsed.date() if fecha_parsed else datetime.now().date()
+                    quarter = self.get_quarter_from_date(invoice_date)
+                    year = invoice_date.year
+
+                    # Crear factura
+                    tax_invoice = TaxInvoice.objects.create(
+                        student=student,
+                        invoice_number=n_factura_str,
+                        fecha=invoice_date,
+                        quarter=quarter,
+                        year=year,
+                        curso=self.get_curso_code(curso),
+                        has_tasa_basica=has_tasa_basica,
+                        has_tasa_a=has_tasa_a,
+                        has_traslado=has_traslado,
+                        renovaciones_count=renovaciones,
+                        base_imponible=base_amount,
+                        iva_amount=iva_amount,
+                        tasas_amount=tasas_amount,
+                        total=total_amount,
+                        client_name=f'{first_name} {last_name}',
+                        client_dni=dni_clean,
+                        client_street=str(direccion).strip() if direccion else '',
+                        client_postal_code=str(cp).strip() if cp else '',
+                        client_municipality=str(municipio).strip() if municipio else '',
+                        client_province=str(provincia).strip() if provincia else 'VALENCIA',
+                        notes=f'Importado de {excel_path.name}'
+                    )
+
+                    # Asociar pago a la factura
+                    if payment:
+                        tax_invoice.payments.add(payment)
+
+                    invoices_created += 1
+                    self.stdout.write(self.style.SUCCESS(
+                        f'    + Factura: {n_factura_str} (Base: {base_amount}€, IVA: {iva_amount}€, Tasas: {tasas_amount}€)'
+                    ))
+                else:
+                    invoices_skipped += 1
+                    self.stdout.write(self.style.WARNING(
+                        f'    = Factura ya existe: {n_factura_str}'
+                    ))
+
+            elif n_factura_str and total_amount > 0 and dry_run:
+                invoices_created += 1
+                self.stdout.write(f'    [DRY] + Factura: {n_factura_str}')
 
         wb.close()
 
@@ -331,8 +497,11 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Alumnos creados: {students_created}'))
         self.stdout.write(self.style.SUCCESS(f'Alumnos actualizados: {students_updated}'))
         self.stdout.write(self.style.SUCCESS(f'Pagos registrados: {payments_created}'))
+        self.stdout.write(self.style.SUCCESS(f'Facturas creadas: {invoices_created}'))
         if payments_skipped:
             self.stdout.write(f'Pagos duplicados (ignorados): {payments_skipped}')
+        if invoices_skipped:
+            self.stdout.write(f'Facturas duplicadas (ignoradas): {invoices_skipped}')
         if rows_skipped:
             self.stdout.write(self.style.WARNING(f'Filas saltadas: {rows_skipped}'))
         self.stdout.write('=' * 50)
