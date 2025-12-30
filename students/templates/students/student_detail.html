@@ -195,6 +195,57 @@
     </div>
 </div>
 
+<!-- Sección de Facturas Trimestrales -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-receipt"></i> Facturas Trimestrales</span>
+                <a href="{% url 'tax_invoice_create_for_student' student.pk %}" class="btn btn-sm btn-light">
+                    <i class="bi bi-plus-circle"></i> Nueva
+                </a>
+            </div>
+            <div class="card-body">
+                {% if student.tax_invoices.exists %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>N Factura</th>
+                                <th>Fecha</th>
+                                <th>Curso</th>
+                                <th class="text-end">Total</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in student.tax_invoices.all %}
+                            <tr>
+                                <td><strong>{{ inv.invoice_number }}</strong></td>
+                                <td>{{ inv.fecha|date:"d/m/Y" }}</td>
+                                <td><span class="badge bg-secondary">{{ inv.curso }}</span></td>
+                                <td class="text-end"><strong>{{ inv.total }}&euro;</strong></td>
+                                <td>
+                                    <a href="{% url 'tax_invoice_pdf' inv.pk %}" class="btn btn-sm btn-primary" title="Descargar PDF">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                    <a href="{% url 'tax_invoice_detail' inv.pk %}" class="btn btn-sm btn-outline-secondary" title="Ver detalle">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">No hay facturas trimestrales</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Sección de Prácticas -->
 <div class="row">
     <div class="col-12">

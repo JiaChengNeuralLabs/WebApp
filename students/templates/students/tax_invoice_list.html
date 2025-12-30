@@ -1,0 +1,125 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Facturas Trimestrales - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h3><i class="bi bi-receipt"></i> Facturas Trimestrales</h3>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{% url 'tax_invoice_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Nueva Factura
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Ano</label>
+                <select name="year" class="form-select">
+                    <option value="">Todos</option>
+                    {% for year in available_years %}
+                    <option value="{{ year }}" {% if year_filter == year|stringformat:"s" %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Trimestre</label>
+                <select name="quarter" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="1" {% if quarter_filter == "1" %}selected{% endif %}>T1 (Ene-Mar)</option>
+                    <option value="2" {% if quarter_filter == "2" %}selected{% endif %}>T2 (Abr-Jun)</option>
+                    <option value="3" {% if quarter_filter == "3" %}selected{% endif %}>T3 (Jul-Sep)</option>
+                    <option value="4" {% if quarter_filter == "4" %}selected{% endif %}>T4 (Oct-Dic)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Alumno</label>
+                <input type="text" name="student" class="form-control" value="{{ student_filter }}" placeholder="Nombre o DNI">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de Facturas -->
+<div class="card">
+    <div class="card-body">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>N Factura</th>
+                        <th>Fecha</th>
+                        <th>Alumno</th>
+                        <th>Curso</th>
+                        <th class="text-end">Base</th>
+                        <th class="text-end">IVA</th>
+                        <th class="text-end">Tasas</th>
+                        <th class="text-end">Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in page_obj %}
+                    <tr>
+                        <td><strong>{{ inv.invoice_number }}</strong></td>
+                        <td>{{ inv.fecha|date:"d/m/Y" }}</td>
+                        <td>
+                            <a href="{% url 'student_detail' inv.student.pk %}">{{ inv.client_name }}</a>
+                            <br><small class="text-muted">{{ inv.client_dni }}</small>
+                        </td>
+                        <td><span class="badge bg-secondary">{{ inv.curso }}</span></td>
+                        <td class="text-end">{{ inv.base_imponible }}&euro;</td>
+                        <td class="text-end">{{ inv.iva_amount }}&euro;</td>
+                        <td class="text-end">{{ inv.tasas_amount }}&euro;</td>
+                        <td class="text-end"><strong>{{ inv.total }}&euro;</strong></td>
+                        <td>
+                            <a href="{% url 'tax_invoice_pdf' inv.pk %}" class="btn btn-sm btn-primary" title="Descargar PDF">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </a>
+                            <a href="{% url 'tax_invoice_detail' inv.pk %}" class="btn btn-sm btn-outline-secondary" title="Ver detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginacion -->
+        {% if page_obj.has_other_pages %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&year={{ year_filter }}&quarter={{ quarter_filter }}&student={{ student_filter }}">Anterior</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&year={{ year_filter }}&quarter={{ quarter_filter }}&student={{ student_filter }}">Siguiente</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <p class="text-muted text-center">No hay facturas trimestrales registradas</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

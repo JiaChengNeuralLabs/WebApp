@@ -22,8 +22,8 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from .models import Student, LicenseType, Voucher, Payment, AuditLog, Vehicle, Maintenance, Practice, Invoice
-from .forms import StudentForm, VoucherForm, PaymentForm, VehicleForm, MaintenanceForm, PracticeForm
+from .models import Student, LicenseType, Voucher, Payment, AuditLog, Vehicle, Maintenance, Practice, Invoice, TaxInvoice
+from .forms import StudentForm, VoucherForm, PaymentForm, VehicleForm, MaintenanceForm, PracticeForm, TaxInvoiceForm
 
 
 def landing_page(request):
@@ -920,5 +920,300 @@ def generate_invoice_pdf(request, payment_pk):
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="factura_{invoice.invoice_number}.pdf"'
+
+    return response
+
+
+# ==================== FACTURAS TRIMESTRALES ====================
+
+@login_required
+def tax_invoice_list(request):
+    """Panel centralizado de facturas trimestrales"""
+    from django.core.paginator import Paginator
+
+    invoices = TaxInvoice.objects.all().select_related('student')
+
+    # Filtros
+    year_filter = request.GET.get('year', '')
+    quarter_filter = request.GET.get('quarter', '')
+    student_filter = request.GET.get('student', '')
+
+    if year_filter:
+        invoices = invoices.filter(year=year_filter)
+    if quarter_filter:
+        invoices = invoices.filter(quarter=quarter_filter)
+    if student_filter:
+        invoices = invoices.filter(
+            Q(client_name__icontains=student_filter) |
+            Q(client_dni__icontains=student_filter)
+        )
+
+    # Obtener anos disponibles para el filtro
+    available_years = TaxInvoice.objects.values_list('year', flat=True).distinct().order_by('-year')
+
+    paginator = Paginator(invoices, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'page_obj': page_obj,
+        'year_filter': year_filter,
+        'quarter_filter': quarter_filter,
+        'student_filter': student_filter,
+        'available_years': available_years,
+    }
+    return render(request, 'students/tax_invoice_list.html', context)
+
+
+@login_required
+def tax_invoice_create(request, student_pk=None):
+    """Crear una nueva factura trimestral"""
+    from decimal import Decimal
+    from datetime import date
+
+    student = None
+    if student_pk:
+        student = get_object_or_404(Student, pk=student_pk)
+
+    if request.method == 'POST':
+        form = TaxInvoiceForm(request.POST, student=student)
+        if form.is_valid():
+            tax_invoice = form.save(commit=False)
+
+            # Obtener o seleccionar alumno
+            if student:
+                tax_invoice.student = student
+            else:
+                # Caso de crear desde panel centralizado
+                student_id = request.POST.get('student_id')
+                if student_id:
+                    tax_invoice.student = get_object_or_404(Student, pk=student_id)
+                    student = tax_invoice.student
+
+            # Generar numero de factura
+            year = tax_invoice.fecha.year if tax_invoice.fecha else date.today().year
+            tax_invoice.year = year
+            tax_invoice.invoice_number = TaxInvoice.generate_invoice_number(year)
+
+            # Snapshot de datos del cliente
+            tax_invoice.client_name = f"{tax_invoice.student.first_name} {tax_invoice.student.last_name}"
+            tax_invoice.client_dni = tax_invoice.student.dni
+            tax_invoice.client_street = tax_invoice.student.street_address or tax_invoice.student.address
+            tax_invoice.client_postal_code = tax_invoice.student.postal_code
+            tax_invoice.client_municipality = tax_invoice.student.municipality
+            tax_invoice.client_province = tax_invoice.student.province
+
+            # Calcular importes
+            total_paid = form.cleaned_data['total_paid']
+            base, iva, tasas, total = TaxInvoice.compute_components(
+                total_paid,
+                tax_invoice.has_tasa_basica,
+                tax_invoice.has_tasa_a,
+                tax_invoice.has_traslado,
+                tax_invoice.renovaciones_count,
+                tax_invoice.curso
+            )
+
+            tax_invoice.base_imponible = base
+            tax_invoice.iva_amount = iva
+            tax_invoice.tasas_amount = tasas
+            tax_invoice.total = total
+            tax_invoice.created_by = request.user
+
+            tax_invoice.save()
+
+            # Vincular pagos seleccionados
+            selected_payments = form.cleaned_data.get('selected_payments')
+            if selected_payments:
+                tax_invoice.payments.set(selected_payments)
+
+            messages.success(request, f'Factura trimestral {tax_invoice.invoice_number} creada correctamente')
+
+            if student_pk:
+                return redirect('student_detail', pk=student_pk)
+            return redirect('tax_invoice_list')
+    else:
+        form = TaxInvoiceForm(student=student)
+
+    # Lista de alumnos para seleccionar (solo si no hay alumno predefinido)
+    students_list = None
+    if not student:
+        students_list = Student.objects.filter(is_active=True).order_by('last_name', 'first_name')
+
+    context = {
+        'form': form,
+        'student': student,
+        'students_list': students_list,
+    }
+    return render(request, 'students/tax_invoice_form.html', context)
+
+
+@login_required
+def tax_invoice_detail(request, pk):
+    """Ver detalle de una factura trimestral"""
+    tax_invoice = get_object_or_404(TaxInvoice, pk=pk)
+    context = {
+        'tax_invoice': tax_invoice,
+    }
+    return render(request, 'students/tax_invoice_detail.html', context)
+
+
+@login_required
+def generate_tax_invoice_pdf(request, pk):
+    """Genera PDF para una factura trimestral (formato Carrasco)"""
+    from django.http import HttpResponse
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.pdfgen import canvas
+    from reportlab.lib import colors
+    from reportlab.platypus import Table, TableStyle
+    import io
+    import os
+
+    tax_invoice = get_object_or_404(TaxInvoice, pk=pk)
+
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # Datos del emisor (David Carrasco)
+    DATOS_EMISOR = {
+        'nombre': 'David Carrasco Sanchez',
+        'dni': '52648389 D',
+        'domicilio': 'C/ Beniparrell, 31 - Bajo 9',
+        'cp': '46470',
+        'municipio': 'Albal (Valencia)'
+    }
+
+    margin_left = 20 * mm
+    margin_right = width - 20 * mm
+    y = height - 20 * mm
+
+    # === CABECERA ===
+    # Intentar cargar logo
+    logo_path = os.path.join(os.path.dirname(__file__), 'static', 'students', 'logo.png')
+    if os.path.exists(logo_path):
+        try:
+            c.drawImage(logo_path, margin_left, y - 45 * mm, width=60 * mm, height=45 * mm, preserveAspectRatio=True)
+        except:
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(margin_left, y - 5 * mm, "A U T O E S C U E L A")
+            c.setFont("Helvetica-Bold", 22)
+            c.drawString(margin_left, y - 15 * mm, "CARRASCO")
+    else:
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(margin_left, y - 5 * mm, "A U T O E S C U E L A")
+        c.setFont("Helvetica-Bold", 22)
+        c.drawString(margin_left, y - 15 * mm, "CARRASCO")
+
+    # Recuadro datos emisor (derecha)
+    box_x = 105 * mm
+    box_y = y - 45 * mm
+    box_width = 85 * mm
+    box_height = 43 * mm
+
+    c.setStrokeColor(colors.black)
+    c.setLineWidth(0.5)
+    c.rect(box_x, box_y, box_width, box_height)
+
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(box_x + 3 * mm, box_y + box_height - 7 * mm,
+                 f"Fecha: {tax_invoice.fecha.strftime('%d/%m/%Y')}")
+    c.drawString(box_x + 3 * mm, box_y + box_height - 14 * mm,
+                 f"Nombre: {DATOS_EMISOR['nombre']}")
+    c.setFont("Helvetica", 9)
+    c.drawString(box_x + 3 * mm, box_y + box_height - 20 * mm, DATOS_EMISOR['dni'])
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(box_x + 3 * mm, box_y + box_height - 27 * mm,
+                 f"Domicilio: {DATOS_EMISOR['domicilio']}")
+    c.drawString(box_x + 3 * mm, box_y + box_height - 33 * mm,
+                 f"C.P: {DATOS_EMISOR['cp']}")
+    c.setFont("Helvetica", 9)
+    c.drawString(box_x + 3 * mm, box_y + box_height - 39 * mm, DATOS_EMISOR['municipio'])
+
+    y = y - 55 * mm
+
+    # === DATOS CLIENTE ===
+    client_box_height = 40 * mm
+    client_box_y = y - client_box_height
+    c.rect(margin_left, client_box_y, 80 * mm, client_box_height)
+
+    c.setFont("Helvetica-BoldOblique", 9)
+    c.drawString(margin_left + 3 * mm, y - 6 * mm, f"Cliente: {tax_invoice.client_name}")
+    c.drawString(margin_left + 3 * mm, y - 12 * mm, f"Dni: {tax_invoice.client_dni}")
+    c.drawString(margin_left + 3 * mm, y - 18 * mm, f"Domicilio: {tax_invoice.client_street}")
+    c.drawString(margin_left + 3 * mm, y - 24 * mm, f"C.P: {tax_invoice.client_postal_code}")
+
+    mun_prov = f"{tax_invoice.client_municipality}"
+    if tax_invoice.client_province:
+        mun_prov += f", {tax_invoice.client_province}"
+    c.drawString(margin_left + 3 * mm, y - 30 * mm, f"Municipio/Provincia: {mun_prov}")
+
+    c.setFont("Helvetica", 9)
+    c.drawString(margin_left + 3 * mm, y - 38 * mm,
+                 f"N FACTURA ALB {tax_invoice.invoice_number}")
+
+    y = y - 50 * mm
+
+    # === TABLA DE CONCEPTOS ===
+    conceptos = []
+
+    if tax_invoice.base_imponible > 0:
+        concepto_curso = f"CURSO PERMISO {tax_invoice.curso}\nALUMNO: {tax_invoice.client_name},\n{tax_invoice.client_dni}"
+        conceptos.append(['1', concepto_curso, f"{tax_invoice.base_imponible:.2f}", ''])
+
+    if tax_invoice.tasas_amount > 0:
+        conceptos.append(['1', "TASA DE TRAFICO (EXENTA DE IVA)", f"{tax_invoice.tasas_amount:.2f}", ''])
+
+    table_data = [['CANTIDAD', 'CONCEPTO', 'PRECIO', 'TOTAL']]
+    table_data.extend(conceptos)
+
+    while len(table_data) < 12:
+        table_data.append(['', '', '', ''])
+
+    col_widths = [20 * mm, 95 * mm, 25 * mm, 25 * mm]
+    table = Table(table_data, colWidths=col_widths)
+    table.setStyle(TableStyle([
+        ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold', 9),
+        ('FONT', (0, 1), (-1, -1), 'Helvetica', 9),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('ALIGN', (2, 0), (3, -1), 'RIGHT'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+
+    table_width, table_height = table.wrap(0, 0)
+    table.drawOn(c, margin_left, y - table_height)
+
+    y = y - table_height - 10 * mm
+
+    # === TOTALES ===
+    iva_percent = 21 if tax_invoice.iva_amount > 0 else 0
+
+    totals_data = [
+        ['BASE IMPONIBLE', f"{tax_invoice.base_imponible:.2f}"],
+        [f'IVA {iva_percent} %', f"{tax_invoice.iva_amount:.2f}"],
+        ['EXENTO', f"{tax_invoice.tasas_amount:.2f}"],
+        ['TOTAL', f"{tax_invoice.total:.0f}"],
+    ]
+
+    totals_table = Table(totals_data, colWidths=[35 * mm, 20 * mm])
+    totals_table.setStyle(TableStyle([
+        ('FONT', (0, 0), (-1, -1), 'Helvetica', 9),
+        ('FONT', (0, -1), (-1, -1), 'Helvetica-Bold', 10),
+        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+    ]))
+
+    tw, th = totals_table.wrap(0, 0)
+    totals_table.drawOn(c, margin_right - tw, y - th)
+
+    c.save()
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    num_short = tax_invoice.invoice_number.split('/')[1] if '/' in tax_invoice.invoice_number else tax_invoice.invoice_number
+    response['Content-Disposition'] = f'attachment; filename="fra {num_short}.pdf"'
 
     return response

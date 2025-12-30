@@ -167,6 +167,11 @@
                             <i class="bi bi-clock-history"></i> Historial
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'tax_invoice_list' %}">
+                            <i class="bi bi-receipt"></i> Facturas Trimestrales
+                        </a>
+                    </li>
                     {% if user.username == 'david' or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'vehicle_list' %}" style="background-color: rgba(255,255,255,0.2); border-radius: 5px; margin-left: 10px;">

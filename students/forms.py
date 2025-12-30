@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django import forms
-from .models import Student, Voucher, Payment, LicenseType, Vehicle, Maintenance, Practice
+from .models import Student, Voucher, Payment, LicenseType, Vehicle, Maintenance, Practice, TaxInvoice
 
 
 class StudentForm(forms.ModelForm):
@@ -8,7 +8,11 @@ class StudentForm(forms.ModelForm):
 
     class Meta:
         model = Student
-        fields = ['expedition_number', 'first_name', 'last_name', 'dni', 'email', 'phone', 'address', 'license_type', 'is_active', 'notes']
+        fields = [
+            'expedition_number', 'first_name', 'last_name', 'dni', 'email', 'phone',
+            'address', 'street_address', 'postal_code', 'municipality', 'province',
+            'license_type', 'is_active', 'notes'
+        ]
         widgets = {
             'expedition_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número de expediente (opcional)'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre'}),
@@ -16,7 +20,11 @@ class StudentForm(forms.ModelForm):
             'dni': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'DNI'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email (opcional)'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Telefono'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Direccion (opcional)'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Direccion completa (opcional)'}),
+            'street_address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Calle y numero'}),
+            'postal_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Codigo postal', 'style': 'width: 120px;'}),
+            'municipality': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Municipio'}),
+            'province': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Provincia'}),
             'license_type': forms.Select(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notas adicionales (opcional)'}),
@@ -136,3 +144,74 @@ class PracticeForm(forms.ModelForm):
             'practice_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'notes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Notas (opcional)'}),
         }
+
+
+class TaxInvoiceForm(forms.ModelForm):
+    """Formulario para crear facturas trimestrales con tasas DGT"""
+
+    # Seleccion de pagos a incluir
+    selected_payments = forms.ModelMultipleChoiceField(
+        queryset=Payment.objects.none(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Pagos a incluir"
+    )
+
+    # Total pagado (puede ingresarse manualmente o calcularse desde pagos)
+    total_paid = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.01',
+            'id': 'id_total_paid',
+            'placeholder': 'Total pagado en euros'
+        }),
+        label="Total pagado"
+    )
+
+    class Meta:
+        model = TaxInvoice
+        fields = [
+            'fecha', 'curso',
+            'has_tasa_basica', 'has_tasa_a', 'has_traslado', 'renovaciones_count',
+            'notes'
+        ]
+        widgets = {
+            'fecha': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'curso': forms.Select(attrs={'class': 'form-control'}),
+            'has_tasa_basica': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_tasa_a': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_traslado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'renovaciones_count': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'style': 'width: 80px;'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Notas adicionales (opcional)'
+            }),
+        }
+
+    def __init__(self, *args, student=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if student:
+            # Filtrar pagos de este alumno que no tienen factura trimestral
+            self.fields['selected_payments'].queryset = Payment.objects.filter(
+                student=student
+            ).exclude(
+                tax_invoices__isnull=False
+            ).order_by('-date_paid')
+
+            # Pre-rellenar curso basado en el tipo de carnet del alumno
+            curso_map = {
+                'B': 'B', 'A': 'A', 'A1': 'A1', 'A2': 'A2', 'AM': 'AM',
+                'C': 'C', 'D': 'B', 'BE': 'B'
+            }
+            license_name = student.license_type.name if student.license_type else 'B'
+            self.initial['curso'] = curso_map.get(license_name, 'B')

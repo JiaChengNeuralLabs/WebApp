@@ -1,0 +1,212 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Nueva Factura Trimestral - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <a href="{% if student %}{% url 'student_detail' student.pk %}{% else %}{% url 'tax_invoice_list' %}{% endif %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-receipt"></i> Nueva Factura Trimestral
+        {% if student %} - {{ student.first_name }} {{ student.last_name }}{% endif %}
+    </div>
+    <div class="card-body">
+        <form method="post" id="taxInvoiceForm">
+            {% csrf_token %}
+
+            {% if not student and students_list %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5>Seleccionar Alumno</h5>
+                    <select name="student_id" class="form-control" required id="studentSelect">
+                        <option value="">-- Seleccione un alumno --</option>
+                        {% for s in students_list %}
+                        <option value="{{ s.pk }}">{{ s.last_name }}, {{ s.first_name }} ({{ s.dni }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Datos de la Factura</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        {{ form.fecha }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Curso</label>
+                        {{ form.curso }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Total Pagado (euros)</label>
+                        {{ form.total_paid }}
+                        <small class="text-muted">Introduce el total que ha pagado el alumno</small>
+                    </div>
+
+                    <h5 class="mt-4">Tasas DGT</h5>
+
+                    <div class="form-check mb-2">
+                        {{ form.has_tasa_basica }}
+                        <label class="form-check-label">Tasa Basica (94.05 euros)</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        {{ form.has_tasa_a }}
+                        <label class="form-check-label">Tasa A - Motocicletas (28.87 euros)</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        {{ form.has_traslado }}
+                        <label class="form-check-label">Traslado expediente (8.67 euros)</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Renovaciones (94.05 euros c/u)</label>
+                        {{ form.renovaciones_count }}
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    {% if student %}
+                    <h5>Pagos a Incluir</h5>
+
+                    {% if form.selected_payments.field.queryset.exists %}
+                    <div class="mb-3" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 10px;">
+                        {% for payment in form.selected_payments.field.queryset %}
+                        <div class="form-check">
+                            <input type="checkbox" name="selected_payments" value="{{ payment.pk }}" class="form-check-input payment-checkbox" data-amount="{{ payment.amount }}">
+                            <label class="form-check-label">
+                                {{ payment.date_paid|date:"d/m/Y" }} -
+                                {{ payment.amount }} euros
+                                ({{ payment.get_payment_method_display }})
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="calcFromPayments">
+                        <i class="bi bi-calculator"></i> Calcular desde pagos seleccionados
+                    </button>
+                    {% else %}
+                    <p class="text-muted">No hay pagos disponibles sin factura trimestral</p>
+                    {% endif %}
+                    {% endif %}
+
+                    <hr>
+
+                    <h5>Vista Previa</h5>
+                    <div class="alert alert-light" id="preview">
+                        <div class="row">
+                            <div class="col-6">Base Imponible:</div>
+                            <div class="col-6 text-end" id="previewBase">0.00 euros</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">IVA (21%):</div>
+                            <div class="col-6 text-end" id="previewIva">0.00 euros</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">Tasas (exento):</div>
+                            <div class="col-6 text-end" id="previewTasas">0.00 euros</div>
+                        </div>
+                        <div class="row fw-bold">
+                            <div class="col-6">TOTAL:</div>
+                            <div class="col-6 text-end" id="previewTotal">0.00 euros</div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-secondary" id="calculateBtn">
+                        <i class="bi bi-calculator"></i> Calcular
+                    </button>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notas</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle"></i> Crear Factura Trimestral
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Constantes de tasas
+const TASA_BASICA = 94.05;
+const TASA_A = 28.87;
+const TRASLADO = 8.67;
+const RENOVACION = 94.05;
+const IVA_RATE = 0.21;
+
+function calculatePreview() {
+    const totalPaid = parseFloat(document.getElementById('id_total_paid').value) || 0;
+    const curso = document.querySelector('[name="curso"]').value;
+    const tasaBasica = document.querySelector('[name="has_tasa_basica"]').checked ? 1 : 0;
+    const tasaA = document.querySelector('[name="has_tasa_a"]').checked ? 1 : 0;
+    const traslado = document.querySelector('[name="has_traslado"]').checked ? 1 : 0;
+    const renovaciones = parseInt(document.querySelector('[name="renovaciones_count"]').value) || 0;
+
+    const sumTasas = (tasaBasica * TASA_BASICA) + (tasaA * TASA_A) + (traslado * TRASLADO) + (renovaciones * RENOVACION);
+    const importeAfter = totalPaid - sumTasas;
+
+    let base, iva;
+    if (importeAfter <= 0) {
+        base = 0;
+        iva = 0;
+    } else if (curso === 'C' || curso === 'C+E') {
+        base = importeAfter;
+        iva = 0;
+    } else {
+        base = importeAfter / (1 + IVA_RATE);
+        iva = base * IVA_RATE;
+    }
+
+    const total = base + iva + sumTasas;
+
+    document.getElementById('previewBase').textContent = base.toFixed(2) + ' euros';
+    document.getElementById('previewIva').textContent = iva.toFixed(2) + ' euros';
+    document.getElementById('previewTasas').textContent = sumTasas.toFixed(2) + ' euros';
+    document.getElementById('previewTotal').textContent = total.toFixed(2) + ' euros';
+}
+
+document.getElementById('calculateBtn').addEventListener('click', calculatePreview);
+
+// Calcular desde pagos seleccionados
+const calcFromPaymentsBtn = document.getElementById('calcFromPayments');
+if (calcFromPaymentsBtn) {
+    calcFromPaymentsBtn.addEventListener('click', function() {
+        let total = 0;
+        document.querySelectorAll('.payment-checkbox:checked').forEach(function(cb) {
+            total += parseFloat(cb.dataset.amount) || 0;
+        });
+        document.getElementById('id_total_paid').value = total.toFixed(2);
+        calculatePreview();
+    });
+}
+
+// Auto-calcular al cambiar inputs
+document.querySelectorAll('input, select').forEach(function(el) {
+    el.addEventListener('change', calculatePreview);
+});
+</script>
+{% endblock %}

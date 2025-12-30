@@ -47,6 +47,28 @@ class Student(models.Model):
     email = models.EmailField(blank=True, null=True, verbose_name="Email")
     phone = models.CharField(max_length=20, verbose_name="Teléfono")
     address = models.TextField(blank=True, verbose_name="Dirección")
+    # Campos de dirección estructurados para facturas trimestrales
+    street_address = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Calle/Dirección"
+    )
+    postal_code = models.CharField(
+        max_length=10,
+        blank=True,
+        verbose_name="Código Postal"
+    )
+    municipality = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Municipio"
+    )
+    province = models.CharField(
+        max_length=100,
+        blank=True,
+        default='VALENCIA',
+        verbose_name="Provincia"
+    )
     license_type = models.ForeignKey(
         LicenseType,
         on_delete=models.PROTECT,
@@ -752,3 +774,208 @@ class Invoice(models.Model):
             concept=concept
         )
         return invoice
+
+
+class TaxInvoice(models.Model):
+    """
+    Factura Trimestral con Tasas DGT.
+    Diferente del modelo Invoice que es para recibos de pagos con tarjeta.
+    TaxInvoice cubre uno o más pagos para reportes trimestrales.
+    """
+    from decimal import Decimal
+
+    # Tipos de curso (matching Carrasco project)
+    CURSO_CHOICES = [
+        ('AM', 'AM - Ciclomotores'),
+        ('A1', 'A1 - Motocicletas hasta 125cc'),
+        ('A2', 'A2 - Motocicletas hasta 35kW'),
+        ('A', 'A - Motocicletas sin límite'),
+        ('B', 'B - Automóviles'),
+        ('C', 'C - Camiones'),
+        ('C+E', 'C+E - Camión con remolque'),
+    ]
+
+    # Constantes de tasas DGT (del proyecto Carrasco)
+    TASA_BASICA = Decimal('94.05')
+    TASA_A = Decimal('28.87')
+    TRASLADO = Decimal('8.67')
+    RENOVACION = Decimal('94.05')
+    IVA_RATE = Decimal('0.21')
+
+    # Relaciones principales
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.PROTECT,
+        related_name='tax_invoices',
+        verbose_name="Alumno"
+    )
+    payments = models.ManyToManyField(
+        Payment,
+        related_name='tax_invoices',
+        blank=True,
+        verbose_name="Pagos incluidos"
+    )
+
+    # Identificación de factura
+    invoice_number = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name="Número de factura"
+    )  # Formato: YYYY/NNNN
+
+    fecha = models.DateField(
+        verbose_name="Fecha de factura"
+    )
+    quarter = models.PositiveSmallIntegerField(
+        verbose_name="Trimestre",
+        choices=[(1, 'T1'), (2, 'T2'), (3, 'T3'), (4, 'T4')]
+    )
+    year = models.PositiveIntegerField(
+        verbose_name="Año fiscal"
+    )
+
+    # Tipo de curso
+    curso = models.CharField(
+        max_length=5,
+        choices=CURSO_CHOICES,
+        verbose_name="Tipo de curso"
+    )
+
+    # Flags de tasas (del invoice_gui.py de Carrasco)
+    has_tasa_basica = models.BooleanField(
+        default=False,
+        verbose_name="Incluye Tasa Básica"
+    )
+    has_tasa_a = models.BooleanField(
+        default=False,
+        verbose_name="Incluye Tasa A (motocicletas)"
+    )
+    has_traslado = models.BooleanField(
+        default=False,
+        verbose_name="Incluye Traslado expediente"
+    )
+    renovaciones_count = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name="Número de renovaciones"
+    )
+
+    # Importes calculados (almacenados para auditoría)
+    base_imponible = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Base imponible"
+    )
+    iva_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="IVA"
+    )
+    tasas_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Tasas DGT (exento)"
+    )
+    total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Total factura"
+    )
+
+    # Snapshot de datos del cliente (para cumplimiento legal)
+    client_name = models.CharField(max_length=200, verbose_name="Nombre cliente")
+    client_dni = models.CharField(max_length=20, verbose_name="DNI cliente")
+    client_street = models.CharField(max_length=200, blank=True, verbose_name="Dirección")
+    client_postal_code = models.CharField(max_length=10, blank=True, verbose_name="CP")
+    client_municipality = models.CharField(max_length=100, blank=True, verbose_name="Municipio")
+    client_province = models.CharField(max_length=100, blank=True, verbose_name="Provincia")
+
+    # Metadatos
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='tax_invoices_created',
+        verbose_name="Creado por"
+    )
+    notes = models.TextField(blank=True, verbose_name="Notas")
+
+    class Meta:
+        verbose_name = "Factura Trimestral"
+        verbose_name_plural = "Facturas Trimestrales"
+        ordering = ['-year', '-quarter', '-invoice_number']
+        indexes = [
+            models.Index(fields=['year', 'quarter']),
+            models.Index(fields=['student', '-fecha']),
+        ]
+
+    def __str__(self):
+        return f"Factura {self.invoice_number} - {self.client_name}"
+
+    @staticmethod
+    def get_quarter_from_date(date):
+        """Retorna el trimestre (1-4) desde una fecha."""
+        month = date.month
+        if 1 <= month <= 3:
+            return 1
+        elif 4 <= month <= 6:
+            return 2
+        elif 7 <= month <= 9:
+            return 3
+        return 4
+
+    @classmethod
+    def generate_invoice_number(cls, year):
+        """Genera el siguiente número de factura para el año: YYYY/NNNN"""
+        last_invoice = cls.objects.filter(year=year).order_by('-invoice_number').first()
+        if last_invoice:
+            try:
+                last_num = int(last_invoice.invoice_number.split('/')[1])
+                next_num = last_num + 1
+            except (IndexError, ValueError):
+                next_num = 1
+        else:
+            next_num = 1
+        return f"{year}/{next_num:04d}"
+
+    @classmethod
+    def compute_components(cls, total_paid, tasa_basica, tasa_a, traslado, renovaciones, curso):
+        """
+        Calcula el desglose de factura desde el total pagado.
+        Adaptado de Carrasco invoice_gui.py compute_components()
+        """
+        from decimal import Decimal, ROUND_HALF_UP
+
+        sum_tasas = (
+            (1 if tasa_basica else 0) * cls.TASA_BASICA +
+            (1 if tasa_a else 0) * cls.TASA_A +
+            (1 if traslado else 0) * cls.TRASLADO +
+            renovaciones * cls.RENOVACION
+        )
+        sum_tasas = sum_tasas.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        importe_after = total_paid - sum_tasas
+
+        if importe_after <= 0:
+            base = Decimal('0.00')
+            iva = Decimal('0.00')
+        else:
+            # Cursos C y C+E están exentos de IVA
+            if curso in ('C', 'C+E'):
+                base = importe_after
+                iva = Decimal('0.00')
+            else:
+                base = (importe_after / (1 + cls.IVA_RATE)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                iva = (base * cls.IVA_RATE).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        total = base + iva + sum_tasas
+        return base, iva, sum_tasas, total
+
+    def save(self, *args, **kwargs):
+        # Auto-establecer trimestre y año desde fecha si no están establecidos
+        if self.fecha:
+            if not self.quarter:
+                self.quarter = self.get_quarter_from_date(self.fecha)
+            if not self.year:
+                self.year = self.fecha.year
+        super().save(*args, **kwargs)

@@ -33,4 +33,11 @@ urlpatterns = [
 
     # Facturas (solo pagos con tarjeta)
     path('panel/pago/<int:payment_pk>/factura/', views.generate_invoice_pdf, name='generate_invoice'),
+
+    # Facturas trimestrales (Tax Invoices)
+    path('panel/facturas-trimestrales/', views.tax_invoice_list, name='tax_invoice_list'),
+    path('panel/facturas-trimestrales/nueva/', views.tax_invoice_create, name='tax_invoice_create'),
+    path('panel/<int:student_pk>/factura-trimestral/nueva/', views.tax_invoice_create, name='tax_invoice_create_for_student'),
+    path('panel/factura-trimestral/<int:pk>/', views.tax_invoice_detail, name='tax_invoice_detail'),
+    path('panel/factura-trimestral/<int:pk>/pdf/', views.generate_tax_invoice_pdf, name='tax_invoice_pdf'),
 ]

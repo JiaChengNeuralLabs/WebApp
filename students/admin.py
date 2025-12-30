@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import LicenseType, Student, Voucher, Payment, AuditLog
+from .models import LicenseType, Student, Voucher, Payment, AuditLog, TaxInvoice
 
 
 @admin.register(LicenseType)
@@ -47,3 +47,32 @@ class AuditLogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Solo superusuarios pueden eliminar logs
         return request.user.is_superuser
+
+
+@admin.register(TaxInvoice)
+class TaxInvoiceAdmin(admin.ModelAdmin):
+    list_display = ['invoice_number', 'fecha', 'client_name', 'curso', 'total', 'quarter', 'year']
+    list_filter = ['year', 'quarter', 'curso', 'created_at']
+    search_fields = ['invoice_number', 'client_name', 'client_dni']
+    date_hierarchy = 'fecha'
+    readonly_fields = ['created_at', 'created_by']
+
+    fieldsets = (
+        ('Identificacion', {
+            'fields': ('invoice_number', 'fecha', 'quarter', 'year', 'curso')
+        }),
+        ('Cliente', {
+            'fields': ('student', 'client_name', 'client_dni', 'client_street',
+                      'client_postal_code', 'client_municipality', 'client_province')
+        }),
+        ('Tasas DGT', {
+            'fields': ('has_tasa_basica', 'has_tasa_a', 'has_traslado', 'renovaciones_count')
+        }),
+        ('Importes', {
+            'fields': ('base_imponible', 'iva_amount', 'tasas_amount', 'total')
+        }),
+        ('Metadata', {
+            'fields': ('payments', 'notes', 'created_at', 'created_by'),
+            'classes': ('collapse',)
+        }),
+    )
