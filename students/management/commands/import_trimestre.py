@@ -173,6 +173,7 @@ class Command(BaseCommand):
         students_created = 0
         students_updated = 0
         payments_created = 0
+        payments_skipped = 0  # Pagos duplicados
         rows_skipped = 0
 
         # Columnas (1-indexed para openpyxl):
@@ -281,10 +282,22 @@ class Command(BaseCommand):
 
             # Registrar pago si hay importe
             if total_amount > 0:
+                # Crear identificador único basado en número de factura o DNI+importe+fecha
+                n_factura_str = str(n_factura).strip() if n_factura else None
+
                 if not dry_run:
-                    # Verificar si ya existe un pago con el mismo importe y fecha
+                    # Verificar duplicados de múltiples formas:
                     existing_payment = None
-                    if fecha_parsed:
+
+                    # 1. Buscar por número de factura en las notas (más fiable)
+                    if n_factura_str:
+                        existing_payment = Payment.objects.filter(
+                            student=student,
+                            notes__icontains=f'Factura {n_factura_str}'
+                        ).first()
+
+                    # 2. Si no hay número de factura, buscar por importe+fecha
+                    if not existing_payment and fecha_parsed:
                         existing_payment = Payment.objects.filter(
                             student=student,
                             amount=total_amount,
@@ -297,17 +310,18 @@ class Command(BaseCommand):
                             amount=total_amount,
                             payment_method='CARD',  # Asumimos tarjeta para facturas trimestrales
                             date_paid=fecha_parsed or datetime.now(),
-                            notes=f'Importado de {excel_path.name} - Factura {n_factura or "N/A"}'
+                            notes=f'Importado de {excel_path.name} - Factura {n_factura_str or "N/A"}'
                         )
                         payments_created += 1
-                        self.stdout.write(f'    + Pago: {total_amount}€ ({fecha_parsed or "hoy"})')
+                        self.stdout.write(f'    + Pago: {total_amount}€ - Factura {n_factura_str or "N/A"}')
                     else:
+                        payments_skipped += 1
                         self.stdout.write(self.style.WARNING(
-                            f'    = Pago ya existe: {total_amount}€'
+                            f'    = Pago ya existe: {total_amount}€ - Factura {n_factura_str or "N/A"}'
                         ))
                 else:
                     payments_created += 1
-                    self.stdout.write(f'    [DRY] + Pago: {total_amount}€')
+                    self.stdout.write(f'    [DRY] + Pago: {total_amount}€ - Factura {n_factura_str or "N/A"}')
 
         wb.close()
 
@@ -317,6 +331,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Alumnos creados: {students_created}'))
         self.stdout.write(self.style.SUCCESS(f'Alumnos actualizados: {students_updated}'))
         self.stdout.write(self.style.SUCCESS(f'Pagos registrados: {payments_created}'))
+        if payments_skipped:
+            self.stdout.write(f'Pagos duplicados (ignorados): {payments_skipped}')
         if rows_skipped:
             self.stdout.write(self.style.WARNING(f'Filas saltadas: {rows_skipped}'))
         self.stdout.write('=' * 50)
